@@ -1,0 +1,19 @@
+{
+  "name": "nexus-underground-rescue-network",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "lucide": "^0.475.0",
+    "three": "^0.173.0"
+  },
+  "devDependencies": {
+    "vite": "^6.1.0"
+  }
+}

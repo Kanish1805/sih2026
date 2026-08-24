@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXUS – Autonomous Subterranean Rescue Network | Industrial Mission Control</title>
+  <meta name="description" content="AI-Powered Subterranean Autonomous Rescue Network Simulation Platform. Real-time Multi-Agent Robotics, Worker Bio-Telemetry, LoRa Mesh, Explainable AI Risk Assessment, and 3D Digital Twin." />
+  
+  <!-- Google Fonts: Modern, Technical, Clean & Highly Legible -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/src/styles/theme.css" />
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body class="nexus-light-theme">
+  <!-- Subtle technical grid overlay -->
+  <div class="hud-grid-pattern" aria-hidden="true"></div>
+
+  <div id="app" class="nexus-app-container">
+    <!-- Top Command Center Header -->
+    <header class="nexus-header" id="nexusHeader">
+      <div class="header-brand">
+        <div class="brand-logo-hex">
+          <i data-lucide="shield-alert" class="brand-icon"></i>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">
+            <span class="nexus-bold">NEXUS</span>
+            <span class="brand-badge">MISSION CONTROL</span>
+            <span class="sub-badge">SUBTERRANEAN RESCUE NETWORK</span>
+          </div>
+          <div class="brand-subtitle">AUTONOMOUS DECENTRALIZED MINE SAFETY PLATFORM</div>
+        </div>
+      </div>
+
+      <!-- Core Visual Philosophy Pipeline Indicator -->
+      <div class="nexus-pipeline-bar" id="pipelineBar">
+        <div class="pipeline-step active" data-step="sense"><span class="step-dot"></span>SENSE</div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step" data-step="connect"><span class="step-dot"></span>CONNECT</div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step" data-step="understand"><span class="step-dot"></span>UNDERSTAND</div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step" data-step="predict"><span class="step-dot"></span>PREDICT</div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step" data-step="plan"><span class="step-dot"></span>PLAN</div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step" data-step="rescue"><span class="step-dot"></span>RESCUE</div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-step" data-step="recover"><span class="step-dot"></span>RECOVER</div>
+      </div>
+
+      <!-- Telemetry Status Pills & Global Controls -->
+      <div class="header-status-group">
+        <!-- Live Mission Elapsed Time -->
+        <div class="status-pill time-pill">
+          <i data-lucide="clock" class="pill-icon"></i>
+          <div class="pill-data">
+            <span class="pill-label">MISSION ELAPSED</span>
+            <span class="pill-value font-mono" id="missionElapsed">00:00:00</span>
+          </div>
+        </div>
+
+        <!-- Global Risk Level Pill -->
+        <div class="status-pill risk-pill" id="headerRiskPill">
+          <div class="risk-pulse-orb safe" id="headerRiskOrb"></div>
+          <div class="pill-data">
+            <span class="pill-label">NETWORK RISK</span>
+            <span class="pill-value font-mono" id="headerRiskValue">12 / 100 [SAFE]</span>
+          </div>
+        </div>
+
+        <!-- Mesh Gateway Status Pill -->
+        <div class="status-pill comm-pill">
+          <span class="mesh-ping-dot"></span>
+          <div class="pill-data">
+            <span class="pill-label">LORA MESH</span>
+            <span class="pill-value font-mono" id="headerMeshStatus">8/8 NODES LIVE</span>
+          </div>
+        </div>
+
+        <!-- Audio & Speed & Tour Controls -->
+        <div class="header-action-buttons">
+          <button class="btn-icon" id="audioToggleBtn" title="Toggle Tactical Audio Feedback">
+            <i data-lucide="volume-2" id="audioIcon"></i>
+          </button>
+          
+          <div class="sim-speed-dropdown">
+            <button class="btn-pill font-mono" id="speedBtn" title="Simulation Speed">1x</button>
+            <div class="speed-menu" id="speedMenu">
+              <button data-speed="1" class="active">1.0x Realtime</button>
+              <button data-speed="2">2.0x Fast</button>
+              <button data-speed="5">5.0x Turbo</button>
+            </div>
+          </div>
+
+          <button class="btn-tour-launch" id="btnTourLaunch" title="Launch Tactical Scenario Demonstration Tour">
+            <i data-lucide="play-circle"></i>
+            <span>DEMO TOUR</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global Scenario Control Dock -->
+    <section class="scenario-dock" aria-label="Simulation Scenario Controls">
+      <div class="dock-left-title">
+        <i data-lucide="sliders-horizontal" class="icon-sm"></i>
+        <span>TACTICAL INJECTS:</span>
+      </div>
+      
+      <div class="dock-actions">
+        <button class="btn-scenario btn-danger-action" id="btnTriggerSOS" title="Trigger Emergency Man-Down Beacon on Worker W-03">
+          <i data-lucide="alert-octagon"></i>
+          <span>Trigger Worker SOS</span>
+        </button>
+
+        <button class="btn-scenario btn-warning-action" id="btnIncreaseGas" title="Inject Methane Gas Leak at Face 4B">
+          <i data-lucide="flame"></i>
+          <span>Increase Gas Leak</span>
+        </button>
+
+        <button class="btn-scenario btn-water-action" id="btnTriggerFlood" title="Trigger Rising Flood Ingress at Sub-level 2 Sump">
+          <i data-lucide="droplets"></i>
+          <span>Trigger Flash Flood</span>
+        </button>
+
+        <button class="btn-scenario btn-robot-action" id="btnRobotFail" title="Simulate Hardware Entrapment on Robot R01 with Instant R02 Failover">
+          <i data-lucide="bot-off"></i>
+          <span>Simulate Robot R01 Failure</span>
+        </button>
+
+        <button class="btn-scenario btn-mesh-action" id="btnNodeFail" title="Simulate Sentinel Node SN-05 Drop & Self-Healing LoRa Rerouting">
+          <i data-lucide="wifi-off"></i>
+          <span>Simulate LoRa Node Drop</span>
+        </button>
+
+        <button class="btn-scenario btn-restore" id="btnRestoreSystem" title="Restore All Subterranean Systems to Safe Nominal Baseline">
+          <i data-lucide="rotate-ccw"></i>
+          <span>Restore Safe System</span>
+        </button>
+      </div>
+
+      <div class="dock-sim-state">
+        <button class="btn-sim-control" id="btnPauseSim" title="Pause / Resume Engine">
+          <i data-lucide="pause" id="pauseIcon"></i>
+        </button>
+        <button class="btn-sim-control" id="btnResetSim" title="Reset All Telemetry">
+          <i data-lucide="refresh-cw"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Command Center Split Workspace -->
+    <div class="nexus-workspace-split">
+      <!-- LEFT PANE: PERSISTENT SUBTERRANEAN TACTICAL VIEWPORT (ALWAYS VISIBLE) -->
+      <section class="persistent-map-pane" id="persistentMapPane">
+        <div class="pane-header-bar">
+          <div class="map-title-group">
+            <i data-lucide="map-pin" style="color: var(--blue-primary);"></i>
+            <span class="pane-title">PERSISTENT SUBTERRANEAN TACTICAL VIEWPORT</span>
+            <span class="pane-sub-badge font-mono">SECTOR BHARAT-IV [-380M DEPTH]</span>
+          </div>
+
+          <!-- Dual Mode Toggle (2D Tactical Map vs 3D Digital Twin) -->
+          <div class="viewport-mode-toggle">
+            <button class="btn-mode-toggle active" id="btnMode2D" data-mode="2d">
+              <i data-lucide="map"></i>
+              <span>2D Tactical Map</span>
+            </button>
+            <button class="btn-mode-toggle" id="btnMode3D" data-mode="3d">
+              <i data-lucide="box"></i>
+              <span>3D Digital Twin</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Container for 2D Tactical Map -->
+        <div class="map-viewport-wrapper active" id="viewport2DWrapper">
+          <div id="persistent2DMapContainer" style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <!-- Container for 3D Holographic Digital Twin -->
+        <div class="map-viewport-wrapper" id="viewport3DWrapper">
+          <div id="persistent3DDigitalTwinContainer" style="width: 100%; height: 100%;"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT PANE: DYNAMIC MODULE TACTICAL DECK -->
+      <aside class="module-deck-pane" id="moduleDeckPane">
+        <!-- Module Navigation Tabs -->
+        <div class="deck-tabs-header">
+          <button class="deck-tab active" data-deck="overview" title="System Overview & KPIs">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Overview</span>
+          </button>
+          <button class="deck-tab" data-deck="workers" title="Worker Bio-Tags & ECG">
+            <i data-lucide="users"></i>
+            <span>Workers</span>
+            <span class="tab-badge" id="tabWorkerBadge">6 OK</span>
+          </button>
+          <button class="deck-tab" data-deck="sensors" title="Sentinel Sensor Grid">
+            <i data-lucide="activity"></i>
+            <span>Sensors</span>
+          </button>
+          <button class="deck-tab" data-deck="robots" title="Robotics Fleet & SLAM">
+            <i data-lucide="bot"></i>
+            <span>Robots</span>
+          </button>
+          <button class="deck-tab" data-deck="airisk" title="Explainable AI Risk Engine">
+            <i data-lucide="brain-circuit"></i>
+            <span>AI Risk</span>
+          </button>
+          <button class="deck-tab" data-deck="routes" title="Dynamic Route Planner">
+            <i data-lucide="navigation"></i>
+            <span>Routes</span>
+          </button>
+          <button class="deck-tab" data-deck="mesh" title="LoRa Mesh Network">
+            <i data-lucide="network"></i>
+            <span>Mesh</span>
+          </button>
+          <button class="deck-tab" data-deck="alerts" title="Incident Alerts Stream">
+            <i data-lucide="bell"></i>
+            <span>Alerts</span>
+            <span class="tab-badge alert-tab-badge" id="tabAlertBadge">0</span>
+          </button>
+        </div>
+
+        <!-- Dynamic Module Deck Content Viewports -->
+        <div class="deck-content-body" id="deckContentBody">
+          <div class="deck-view active" id="deckOverview"></div>
+          <div class="deck-view" id="deckWorkers"></div>
+          <div class="deck-view" id="deckSensors"></div>
+          <div class="deck-view" id="deckRobots"></div>
+          <div class="deck-view" id="deckAIRisk"></div>
+          <div class="deck-view" id="deckRoutes"></div>
+          <div class="deck-view" id="deckMesh"></div>
+          <div class="deck-view" id="deckAlerts"></div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Presentation Tour Floating Control Bar (Shows during Tour Mode) -->
+    <div class="presentation-tour-bar" id="presentationTourBar" style="display: none;">
+      <div class="tour-header">
+        <div class="tour-badge"><i data-lucide="award"></i> TACTICAL RESCUE SCENARIO WALKTHROUGH</div>
+        <div class="tour-stage-indicator" id="tourStageName">Stage 1: Normal Subterranean Operations</div>
+      </div>
+      <div class="tour-narrative" id="tourNarrativeText">
+        NEXUS maintains continuous synchronized multi-tier mesh telemetry across workers, sensors, and scout robots in deep Sub-level 3.
+      </div>
+      <div class="tour-keypoint" id="tourKeyPoint">
+        <strong>Key Architectural Takeaway:</strong> Zero single point of failure; decentralized LoRa mesh self-organizes without internet.
+      </div>
+      <div class="tour-controls">
+        <button class="btn-tour-step" id="btnTourPrev"><i data-lucide="chevron-left"></i> Prev</button>
+        <div class="tour-dots" id="tourDots">
+          <span class="tour-dot active"></span>
+          <span class="tour-dot"></span>
+          <span class="tour-dot"></span>
+          <span class="tour-dot"></span>
+          <span class="tour-dot"></span>
+          <span class="tour-dot"></span>
+        </div>
+        <button class="btn-tour-step" id="btnTourNext">Next Stage <i data-lucide="chevron-right"></i></button>
+        <button class="btn-tour-step btn-tour-auto" id="btnTourAutoPlay"><i data-lucide="play"></i> Auto Play</button>
+        <button class="btn-tour-close" id="btnTourExit" title="Exit Presentation Mode"><i data-lucide="x"></i></button>
+      </div>
+    </div>
+
+    <!-- Live Floating Toast Alerts Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <!-- Detail Inspector Modal (For clicking on workers, sensors, robots, tunnels) -->
+    <div class="nexus-modal-backdrop" id="inspectorModal" style="display: none;">
+      <div class="nexus-modal-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <i data-lucide="info" id="modalIcon"></i>
+            <span class="modal-title" id="modalTitle">Entity Telemetry</span>
+          </div>
+          <button class="modal-close-btn" id="modalCloseBtn"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" id="modalBody">
+          <!-- Dynamic details injected via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Post-Mission Incident Debrief Report Modal -->
+    <div class="nexus-modal-backdrop" id="debriefModal" style="display: none;">
+      <div class="nexus-modal-card debrief-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <i data-lucide="file-text"></i>
+            <span class="modal-title">POST-INCIDENT RESCUE DEBRIEF REPORT</span>
+          </div>
+          <button class="modal-close-btn" id="debriefCloseBtn"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" id="debriefModalBody">
+          <!-- Debrief report contents -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="btnCopyDebrief"><i data-lucide="copy"></i> Copy JSON</button>
+          <button class="btn-primary" id="btnPrintDebrief"><i data-lucide="printer"></i> Print / Save Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
