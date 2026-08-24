@@ -1,6 +1,17 @@
 /**
  * NEXUS Global State & Subterranean Topography Definition
+ * Real-Time Digital Twin, Multi-Location Hazards, Spidy Recon, and Statutory Thresholds
  */
+
+export const STATUTORY_LIMITS = {
+  ch4: { label: 'Methane (CH4)', unit: '% LEL', safe: '< 0.75%', warn: '0.75 - 1.25%', crit: '> 1.25%', maxSafe: 0.75, critThreshold: 1.25 },
+  o2: { label: 'Oxygen (O2)', unit: '%', safe: '19.5 - 23.5%', warn: '18.0 - 19.5%', crit: '< 18.0%', minSafe: 19.5, minCrit: 18.0 },
+  co: { label: 'Carbon Monoxide (CO)', unit: 'ppm', safe: '< 25 ppm', warn: '25 - 50 ppm', crit: '> 50 ppm', maxSafe: 25, critThreshold: 50 },
+  temp: { label: 'Temperature', unit: '°C', safe: '< 32°C', warn: '32 - 38°C', crit: '> 38°C', maxSafe: 32, critThreshold: 38 },
+  humidity: { label: 'Relative Humidity', unit: '%', safe: '40 - 70%', warn: '70 - 85%', crit: '> 85%', maxSafe: 70, critThreshold: 85 },
+  waterLevel: { label: 'Water Ingress', unit: 'cm', safe: '< 15 cm', warn: '15 - 30 cm', crit: '> 30 cm', maxSafe: 15, critThreshold: 30 },
+  vibration: { label: 'Seismic Strain', unit: 'mm/s', safe: '< 0.30 mm/s', warn: '0.30 - 0.70 mm/s', crit: '> 0.70 mm/s', maxSafe: 0.30, critThreshold: 0.70 }
+};
 
 export const MINE_TOPOGRAPHY = {
   levels: [
@@ -41,12 +52,23 @@ export const MINE_TOPOGRAPHY = {
   ]
 };
 
+export const HAZARD_LOCATIONS = [
+  { nodeId: 'face_4b', name: 'Extraction Face 4B (Sub-level 3 -380m)', x: 580, y: 410, z: -380, level: 'l3', sensorId: 'SN-08' },
+  { nodeId: 'junc_l1_e', name: 'L1 Ventilation East Drift (-120m)', x: 500, y: 170, z: -120, level: 'l1', sensorId: 'SN-04' },
+  { nodeId: 'junc_l2_w', name: 'L2 Haulage Junction West (-240m)', x: 150, y: 280, z: -240, level: 'l2', sensorId: 'SN-05' },
+  { nodeId: 'junc_l3_w', name: 'L3 Survey Crosscut (-380m)', x: 130, y: 410, z: -380, level: 'l3', sensorId: 'SN-07' },
+  { nodeId: 'sump_l2', name: 'Drainage Sump Basin (-260m)', x: 150, y: 340, z: -260, level: 'l2', sensorId: 'SN-06' },
+  { nodeId: 'junc_l1_w', name: 'L1 Substation West (-120m)', x: 140, y: 170, z: -120, level: 'l1', sensorId: 'SN-03' }
+];
+
 export const INITIAL_STATE = {
   simTime: 0,
   speed: 1,
   isRunning: true,
   overallRisk: 12, // 0 - 100
   riskCategory: 'SAFE', // SAFE, WARNING, HIGH_RISK, CRITICAL
+  hazardCycleIdx: 0,
+  selectedWorkerId: null,
 
   workers: [
     {
@@ -56,14 +78,20 @@ export const INITIAL_STATE = {
       level: 'l1',
       nodeId: 'shaft_l1',
       x: 320, y: 170, z: -120,
+      baseX: 320, baseY: 170, baseZ: -120,
+      patrolTargetX: 200, patrolTargetY: 170,
+      patrolProgress: 0.1,
+      patrolDir: 1,
       hr: 74,
       spO2: 98,
       temp: 36.6,
-      motion: 'WALKING', // STATIONARY, WALKING, RUNNING, MAN_DOWN
+      motion: 'WALKING',
       battery: 92,
       rssi: -72,
-      status: 'NORMAL', // NORMAL, FLAGGED, TRAPPED, SOS, SAFE
+      status: 'NORMAL', // NORMAL, WARNING, TRAPPED, SOS, SAFE
       sosActive: false,
+      tagWarning: null, // Active message received on wearable tag
+      tagRedirectRoute: null,
       tagUptime: '04h 12m'
     },
     {
@@ -72,15 +100,21 @@ export const INITIAL_STATE = {
       role: 'Hydraulic Drill Operator',
       level: 'l2',
       nodeId: 'junc_l2_w',
-      x: 160, y: 280, z: -240,
+      x: 180, y: 280, z: -240,
+      baseX: 150, baseY: 280, baseZ: -240,
+      patrolTargetX: 280, patrolTargetY: 280,
+      patrolProgress: 0.3,
+      patrolDir: 1,
       hr: 82,
       spO2: 97,
       temp: 36.8,
-      motion: 'STATIONARY',
+      motion: 'WALKING',
       battery: 88,
       rssi: -78,
       status: 'NORMAL',
       sosActive: false,
+      tagWarning: null,
+      tagRedirectRoute: null,
       tagUptime: '04h 12m'
     },
     {
@@ -89,15 +123,21 @@ export const INITIAL_STATE = {
       role: 'Senior Blaster & Face Tech',
       level: 'l3',
       nodeId: 'face_4b',
-      x: 575, y: 410, z: -380,
+      x: 560, y: 410, z: -380,
+      baseX: 440, baseY: 410, baseZ: -380,
+      patrolTargetX: 580, patrolTargetY: 410,
+      patrolProgress: 0.8,
+      patrolDir: -1,
       hr: 86,
       spO2: 96,
       temp: 37.1,
-      motion: 'STATIONARY',
+      motion: 'WALKING',
       battery: 84,
       rssi: -84,
-      status: 'NORMAL', // Will transition during scenarios
+      status: 'NORMAL',
       sosActive: false,
+      tagWarning: null,
+      tagRedirectRoute: null,
       tagUptime: '04h 12m'
     },
     {
@@ -106,7 +146,11 @@ export const INITIAL_STATE = {
       role: 'Haulage Loader Operator',
       level: 'l2',
       nodeId: 'junc_l2_e',
-      x: 510, y: 280, z: -240,
+      x: 480, y: 280, z: -240,
+      baseX: 350, baseY: 280, baseZ: -240,
+      patrolTargetX: 520, patrolTargetY: 280,
+      patrolProgress: 0.5,
+      patrolDir: 1,
       hr: 78,
       spO2: 98,
       temp: 36.5,
@@ -115,6 +159,8 @@ export const INITIAL_STATE = {
       rssi: -69,
       status: 'NORMAL',
       sosActive: false,
+      tagWarning: null,
+      tagRedirectRoute: null,
       tagUptime: '04h 12m'
     },
     {
@@ -123,15 +169,21 @@ export const INITIAL_STATE = {
       role: 'Substation Electrical Tech',
       level: 'l1',
       nodeId: 'junc_l1_w',
-      x: 150, y: 170, z: -120,
+      x: 180, y: 170, z: -120,
+      baseX: 140, baseY: 170, baseZ: -120,
+      patrolTargetX: 300, patrolTargetY: 170,
+      patrolProgress: 0.4,
+      patrolDir: -1,
       hr: 71,
       spO2: 99,
       temp: 36.4,
-      motion: 'STATIONARY',
+      motion: 'WALKING',
       battery: 96,
       rssi: -65,
       status: 'NORMAL',
       sosActive: false,
+      tagWarning: null,
+      tagRedirectRoute: null,
       tagUptime: '04h 12m'
     },
     {
@@ -140,7 +192,11 @@ export const INITIAL_STATE = {
       role: 'Mine Geotechnical Surveyor',
       level: 'l3',
       nodeId: 'junc_l3_w',
-      x: 140, y: 410, z: -380,
+      x: 170, y: 410, z: -380,
+      baseX: 130, baseY: 410, baseZ: -380,
+      patrolTargetX: 300, patrolTargetY: 410,
+      patrolProgress: 0.2,
+      patrolDir: 1,
       hr: 75,
       spO2: 98,
       temp: 36.7,
@@ -149,6 +205,8 @@ export const INITIAL_STATE = {
       rssi: -81,
       status: 'NORMAL',
       sosActive: false,
+      tagWarning: null,
+      tagRedirectRoute: null,
       tagUptime: '04h 12m'
     }
   ],
@@ -160,16 +218,16 @@ export const INITIAL_STATE = {
       location: 'Portal Entry (0m)',
       level: 'l0',
       x: 120, y: 70, z: 0,
-      ch4: 0.02, // % LEL (Lower Explosive Limit)
-      co: 2, // ppm
-      h2s: 0.1, // ppm
-      o2: 20.9, // %
-      temp: 22.4, // °C
-      humidity: 58, // %
-      waterLevel: 0, // cm
-      vibration: 0.12, // mm/s
+      ch4: 0.02,
+      co: 2,
+      h2s: 0.1,
+      o2: 20.9,
+      temp: 22.4,
+      humidity: 58,
+      waterLevel: 0,
+      vibration: 0.12,
       battery: 100,
-      status: 'NORMAL', // NORMAL, WARNING, HIGH_RISK, CRITICAL, OFFLINE
+      status: 'NORMAL',
       meshHops: 0,
       history: { ch4: [0.02], co: [2], water: [0], risk: [5] }
     },
@@ -311,58 +369,95 @@ export const INITIAL_STATE = {
   robots: {
     r01: {
       id: 'R-01',
-      name: 'Arachne-1 (Scout SpiderBot)',
-      type: 'HEXAPOD_SCOUT',
-      role: 'Rapid Reconnaissance & SLAM Mapping',
+      name: 'Arachne-1 (Spidy Scout Robot)',
+      type: 'HEXAPOD_SPIDER',
+      role: 'Rapid Autonomous Reconnaissance & SLAM Assessment',
       level: 'l2',
       x: 340, y: 280, z: -240,
-      targetX: 580, targetY: 410, targetZ: -380,
-      status: 'PATROLLING', // IDLE, PATROLLING, DISPATCHED, MAPPING, FAILED, OFFLINE
+      targetX: 340, targetY: 280, targetZ: -240,
+      status: 'PATROLLING', // PATROLLING, SPRINTING_TO_INCIDENT, CONDUCTING_SLAM_RECON, FAILED, OFFLINE
       battery: 89,
-      speedMps: 1.2,
-      mappedCoverage: 78.4, // %
-      lidarRangeM: 12.0,
+      speedMps: 2.8,
+      mappedCoverage: 78.4,
+      lidarRangeM: 15.0,
       lidarPoints: 360,
       thermalMaxC: 34.2,
       coConcentration: 12,
-      payload: '360° RPLiDAR + FLIR Thermal + UWB Directional Sniffer',
-      missionGoal: 'Autonomous perimeter inspection and SLAM frontier expansion',
+      payload: '360° RPLiDAR A3 + FLIR Thermal IR + Multi-Gas Sniffer + UWB Directional',
+      missionGoal: 'Autonomous SLAM perimeter reconnaissance and instant hazard verification',
       isFailed: false,
       failureReason: ''
     },
     r02: {
       id: 'R-02',
-      name: 'Titan-2 (Heavy Rescuer)',
-      type: 'TRACKED_MULE',
-      role: 'Extrication, O2 Delivery & Mesh Repeater',
+      name: 'Arachne-2 (Spidy Standby Robot)',
+      type: 'HEXAPOD_SPIDER',
+      role: 'Hot Standby Recon, Failover SLAM & Rescue Path Guide',
       level: 'l1',
       x: 330, y: 170, z: -120,
       targetX: 330, targetY: 170, targetZ: -120,
-      status: 'STANDBY_HOT', // STANDBY_HOT, SPOOLING, DEPLOYED, RESCUING, RETURNING
+      status: 'STANDBY_HOT', // STANDBY_HOT, SPRINTING_TO_INCIDENT, CONDUCTING_SLAM_RECON, RETURNING
       battery: 98,
-      speedMps: 2.1,
-      mappedCoverage: 100, // inherits full cloud on failover
-      payload: '150kg Robotic Extrication Arm + 2x Emergency O2 Tanks + 10W LoRa Booster',
-      missionGoal: 'Hot standby at L1 shaft station awaiting failover or heavy extrication',
+      speedMps: 3.2,
+      mappedCoverage: 100,
+      payload: '360° RPLiDAR A3 + FLIR Thermal + 2x Emergency O2 Tanks + 10W LoRa Booster',
+      missionGoal: 'Hot standby at L1 shaft collar ready to assume full recon & pathfinding on failover',
       isFailed: false,
       activeTransfer: false
     }
   },
 
+  // Active Rapid Reconnaissance Intelligence Report
+  reconReport: {
+    active: false,
+    inTransit: false,
+    assignedRobotId: 'r01',
+    incidentNodeId: 'face_4b',
+    incidentName: 'Extraction Face 4B (-380m)',
+    incidentType: 'METHANE_LEAK',
+    ch4: 0.28,
+    temp: 29.2,
+    humidity: 82,
+    co: 18,
+    o2: 20.3,
+    humanDetected: true,
+    humanName: 'Rajesh Kumar (W-03)',
+    humanStatus: 'TRAPPED_CONSCIOUS',
+    rescueTeamAllowed: false,
+    rescueTeamRationale: 'Elevated CH4 (2.45% LEL) exceeds safe entry limits. SCBA 60min mandatory for human entry.',
+    alternatePathNodes: ['face_4b', 'refuge_chamber', 'shaft_l3', 'shaft_l2', 'shaft_l1', 'shaft_top', 'portal_a'],
+    alternatePathName: 'Route Alpha (Shaft 1 Hoist Bypass)',
+    timestamp: ''
+  },
+
+  // First-Responder Surface Rescue Team Path
+  rescueTeamRoute: {
+    active: false,
+    origin: 'Surface Rescue Staging (Portal A)',
+    destination: 'Worker W-03 (Face 4B)',
+    pathNodes: ['portal_a', 'shaft_top', 'shaft_l1', 'shaft_l2', 'shaft_l3', 'refuge_chamber', 'face_4b'],
+    distanceM: 480,
+    estArrivalTimeMin: 6.2,
+    requiredPPE: ['SCBA 60-Min Positive Pressure', 'Intrinsically Safe FLIR Camera', 'Heavy Extrication Shears', 'Portable Gas Sniffer'],
+    entryStatus: 'AUTHORIZED_WITH_SCBA'
+  },
+
   hazards: {
     gasPlume: {
       active: false,
+      epicenterNodeId: 'face_4b',
       epicenterX: 580,
       epicenterY: 410,
       epicenterZ: -380,
       level: 'l3',
       radius: 40,
       maxRadius: 180,
-      density: 0.28, // % LEL
+      density: 0.28,
       gasType: 'METHANE (CH4) + CO'
     },
     floodWater: {
       active: false,
+      epicenterNodeId: 'sump_l2',
       sumpLevelCm: 12,
       inundationRateCmMin: 0,
       affectedLevel: 'l2',
@@ -370,7 +465,7 @@ export const INITIAL_STATE = {
     },
     seismicTremor: {
       active: false,
-      magnitude: 0.65, // mm/s
+      magnitude: 0.65,
       zone: 'Sub-level 3 Hanging Wall'
     }
   },
@@ -433,7 +528,7 @@ export const INITIAL_STATE = {
     }
   ],
 
-  activeScenario: 'NORMAL', // NORMAL, SOS, GAS_LEAK, FLOOD, ROBOT_FAIL, NODE_FAIL, FULL_DEMO
+  activeScenario: 'NORMAL',
   pipelinePhase: 'sense'
 };
 

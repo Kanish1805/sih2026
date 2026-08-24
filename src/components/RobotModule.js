@@ -1,5 +1,10 @@
 /**
- * NEXUS Robotics Fleet & SLAM Mapping Command Module (Light Theme)
+ * NEXUS Autonomous Robotics Fleet & Spidy SLAM Reconnaissance Module (Light Theme)
+ * Features:
+ * - Dual Hexapod Spider Robots: R-01 Spidy Scout & R-02 Spidy Standby
+ * - Live 360° RPLiDAR A3 Point-Cloud Canvas
+ * - Real-Time Autonomous SLAM Reconnaissance & Environmental Assessment HUD
+ * - Seamless Failover Handover Controls
  */
 
 import { state } from '../engine/state.js';
@@ -21,23 +26,82 @@ export class RobotModule {
     if (!this.container) return;
     const r01 = state.robots.r01;
     const r02 = state.robots.r02;
+    const recon = state.reconReport;
 
     this.container.innerHTML = `
       <div class="card-header">
         <div class="card-title-group">
           <i data-lucide="bot" style="color: var(--purple-bright);"></i>
-          <span class="card-title">AUTONOMOUS ROBOTICS FLEET & 360° SLAM RECONNAISSANCE</span>
+          <span class="card-title">DUAL SPIDY ROBOTICS & SLAM RECONNAISSANCE</span>
         </div>
         <div class="card-actions">
           <button class="btn-scenario btn-robot-action" id="btnTriggerRobotFailover">
             <i data-lucide="bot-off"></i>
-            <span>Simulate R01 Jam & Failover</span>
+            <span>Simulate Spidy 1 Jam & Failover</span>
           </button>
         </div>
       </div>
 
+      <!-- Real-Time Spidy Reconnaissance Intelligence Assessment Panel -->
+      ${recon.active ? `
+        <div style="background: var(--bg-secondary); border: 1.5px solid var(--purple-bright); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-size: 12.5px; font-weight: 800; color: var(--purple-ai);">
+              <i data-lucide="scan" style="width: 16px; height: 16px;"></i>
+              LIVE SPIDY SLAM RECONNAISSANCE INTELLIGENCE
+            </div>
+            <span class="nav-badge" style="background: var(--purple-tint); color: var(--purple-bright); font-weight: 800; font-size: 9px;">
+              ${recon.assignedRobotId.toUpperCase()} ACTIVE
+            </span>
+          </div>
+
+          <div style="font-size: 11px; color: var(--text-highlight); font-weight: 700; margin-bottom: 6px;">
+            Target Sector: <span style="color: var(--blue-primary);">${recon.incidentName}</span> [${recon.incidentType}]
+          </div>
+
+          <!-- Environmental Sweep Metrics -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font-family: var(--font-mono); font-size: 9.5px; margin-bottom: 8px;">
+            <div style="background: #ffffff; padding: 4px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
+              <div style="font-size: 7.5px; color: var(--text-muted); font-weight: 700;">CH4 (METHANE)</div>
+              <div style="font-weight: 800; color: ${recon.ch4 > 1.25 ? 'var(--red-crit)' : 'var(--green-safe)'};">${recon.ch4}% LEL</div>
+            </div>
+            <div style="background: #ffffff; padding: 4px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
+              <div style="font-size: 7.5px; color: var(--text-muted); font-weight: 700;">TEMPERATURE</div>
+              <div style="font-weight: 800; color: var(--text-highlight);">${recon.temp}°C</div>
+            </div>
+            <div style="background: #ffffff; padding: 4px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
+              <div style="font-size: 7.5px; color: var(--text-muted); font-weight: 700;">HUMIDITY</div>
+              <div style="font-weight: 800; color: var(--text-highlight);">${recon.humidity}%</div>
+            </div>
+            <div style="background: #ffffff; padding: 4px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
+              <div style="font-size: 7.5px; color: var(--text-muted); font-weight: 700;">CO / O2</div>
+              <div style="font-weight: 800; color: var(--text-highlight);">${recon.co}ppm / ${recon.o2}%</div>
+            </div>
+          </div>
+
+          <!-- Human Detection & Rescue Assessment -->
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; line-height: 1.4;">
+            <div style="background: #ffffff; border: 1px solid var(--border-subtle); padding: 6px 8px; border-radius: var(--radius-xs);">
+              <strong>Thermal Human Detection:</strong> 
+              <span style="color: ${recon.humanDetected ? 'var(--green-safe)' : 'var(--text-muted)'}; font-weight: 800;">
+                ${recon.humanDetected ? `✓ ${recon.humanName} (${recon.humanStatus})` : 'No Personnel Trapped in Sector'}
+              </span>
+            </div>
+
+            <div style="background: ${recon.rescueTeamAllowed ? 'var(--green-tint)' : 'var(--red-tint)'}; border: 1px solid ${recon.rescueTeamAllowed ? 'var(--green-safe)' : 'var(--red-crit)'}; padding: 6px 8px; border-radius: var(--radius-xs); color: ${recon.rescueTeamAllowed ? '#065f46' : '#991b1b'};">
+              <strong>Human Rescue Team Entry Assessment:</strong> ${recon.rescueTeamRationale}
+            </div>
+
+            <div style="background: var(--blue-tint); border: 1px solid var(--blue-primary); padding: 6px 8px; border-radius: var(--radius-xs); color: var(--blue-primary); font-weight: 700;">
+              <strong>Alternate Evacuation Route Transmitted:</strong> ${recon.alternatePathName}
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Dual Spidy Fleet Cards -->
       <div style="display: flex; flex-direction: column; gap: 12px;">
-        <!-- R01 Scout Card -->
+        <!-- R01 Spidy Scout -->
         <div class="nexus-card" style="border-color: ${r01.isFailed ? 'var(--red-crit)' : 'var(--border-subtle)'};">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
             <div>
@@ -54,14 +118,14 @@ export class RobotModule {
 
           <!-- Live 360 LiDAR Simulation Canvas -->
           <div style="background: #0f172a; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 6px; margin-bottom: 8px; position: relative;">
-            <canvas id="r01LidarCanvas" width="300" height="130" style="width: 100%; height: 130px; display: block;"></canvas>
+            <canvas id="r01LidarCanvas" width="300" height="110" style="width: 100%; height: 110px; display: block;"></canvas>
             <div style="position: absolute; left: 10px; bottom: 6px; font-family: var(--font-mono); font-size: 9.5px; color: #c084fc; font-weight: 700;">
-              360° RPLiDAR A2 POINT-CLOUD [${r01.lidarPoints} PTS]
+              360° RPLiDAR A3 POINT-CLOUD [${r01.lidarPoints} PTS]
             </div>
           </div>
 
           <!-- Metrics -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 10.5px;">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-family: var(--font-mono); font-size: 10.5px;">
             <div style="background: var(--bg-secondary); padding: 5px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
               <div style="font-size: 8px; color: var(--text-muted); font-weight: 700;">BATTERY</div>
               <div style="font-weight: 800; color: var(--text-highlight);">${r01.battery}%</div>
@@ -76,14 +140,11 @@ export class RobotModule {
             </div>
           </div>
 
-          <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
-            <strong>Payload:</strong> ${r01.payload}
-          </div>
           ${r01.isFailed ? `<div style="background: var(--red-tint); border-left: 3px solid var(--red-crit); padding: 6px 10px; font-size: 11px; color: var(--red-crit); font-weight: 700; margin-top: 6px;">FAILURE: ${r01.failureReason}</div>` : ''}
         </div>
 
-        <!-- R02 Heavy Rescuer Card -->
-        <div class="nexus-card" style="border-color: ${r02.status === 'DEPLOYED' ? 'var(--amber-warn)' : 'var(--border-subtle)'};">
+        <!-- R02 Spidy Standby -->
+        <div class="nexus-card" style="border-color: ${r02.status === 'SPRINTING_TO_INCIDENT' || r02.activeTransfer ? 'var(--amber-warn)' : 'var(--border-subtle)'};">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
             <div>
               <div style="display: flex; align-items: center; gap: 6px;">
@@ -97,16 +158,8 @@ export class RobotModule {
             </span>
           </div>
 
-          <!-- FLIR Thermal Feed -->
-          <div style="background: #0f172a; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 6px; margin-bottom: 8px; position: relative;">
-            <canvas id="r02ThermalCanvas" width="300" height="130" style="width: 100%; height: 130px; display: block;"></canvas>
-            <div style="position: absolute; left: 10px; bottom: 6px; font-family: var(--font-mono); font-size: 9.5px; color: #fbbf24; font-weight: 700;">
-              FLIR LEPTON 3.5 THERMAL IR STREAM [34.2°C PEAK]
-            </div>
-          </div>
-
           <!-- Metrics -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 10.5px;">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-family: var(--font-mono); font-size: 10.5px;">
             <div style="background: var(--bg-secondary); padding: 5px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
               <div style="font-size: 8px; color: var(--text-muted); font-weight: 700;">BATTERY</div>
               <div style="font-weight: 800; color: var(--text-highlight);">${r02.battery}%</div>
@@ -121,17 +174,13 @@ export class RobotModule {
             </div>
           </div>
 
-          <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
-            <strong>Payload:</strong> ${r02.payload}
-          </div>
-          ${r02.activeTransfer ? `<div style="background: var(--amber-tint); border-left: 3px solid var(--amber-warn); padding: 6px 10px; font-size: 11px; color: var(--amber-warn); font-weight: 700; margin-top: 6px;">AUTONOMOUS HANDOVER: Active rescue trajectory in progress.</div>` : ''}
+          ${r02.activeTransfer ? `<div style="background: var(--amber-tint); border-left: 3px solid var(--amber-warn); padding: 6px 10px; font-size: 11px; color: var(--amber-warn); font-weight: 700; margin-top: 6px;">AUTONOMOUS HANDOVER: Spidy Standby executing SLAM sweep and rescue route broadcasting.</div>` : ''}
         </div>
       </div>
     `;
 
     this.bindEvents();
     this.drawLidarScan();
-    this.drawThermalView();
   }
 
   drawLidarScan() {
@@ -147,64 +196,21 @@ export class RobotModule {
 
     ctx.strokeStyle = 'rgba(192, 132, 252, 0.3)';
     ctx.lineWidth = 1;
-    [25, 45, 60].forEach(r => {
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.stroke();
+    [20, 38, 50].forEach(r => {
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
     });
 
     ctx.fillStyle = '#c084fc';
     for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
-      const dist = 32 + Math.sin(angle * 4 + Date.now() * 0.002) * 14 + (Math.random() - 0.5) * 3;
+      const dist = 28 + Math.sin(angle * 4 + Date.now() * 0.002) * 12 + (Math.random() - 0.5) * 3;
       const px = cx + Math.cos(angle) * dist;
       const py = cy + Math.sin(angle) * dist;
 
-      ctx.beginPath();
-      ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2); ctx.fill();
     }
 
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  drawThermalView() {
-    const cvs = this.container.querySelector('#r02ThermalCanvas');
-    if (!cvs) return;
-    const ctx = cvs.getContext('2d');
-    const w = cvs.width;
-    const h = cvs.height;
-
-    ctx.clearRect(0, 0, w, h);
-
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, '#0c0728');
-    grad.addColorStop(0.5, '#1e083a');
-    grad.addColorStop(1, '#050212');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    const heatGrad = ctx.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, 38);
-    heatGrad.addColorStop(0, '#ef4444');
-    heatGrad.addColorStop(0.4, '#f59e0b');
-    heatGrad.addColorStop(0.8, '#7c3aed');
-    heatGrad.addColorStop(1, 'transparent');
-
-    ctx.fillStyle = heatGrad;
-    ctx.beginPath();
-    ctx.arc(w / 2, h / 2, 38, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(w / 2 - 15, h / 2);
-    ctx.lineTo(w / 2 + 15, h / 2);
-    ctx.moveTo(w / 2, h / 2 - 15);
-    ctx.lineTo(w / 2, h / 2 + 15);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
   }
 
   bindEvents() {

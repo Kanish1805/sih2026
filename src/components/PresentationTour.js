@@ -28,7 +28,7 @@ export class PresentationTour {
         phase: 'sense',
         title: 'Stage 1: SENSE & CONNECT – Decentralized Subterranean Mesh',
         module: 'overview',
-        narrative: 'NEXUS maintains continuous synchronized telemetry across 6 miners, 8 multi-gas sentinels, and Scout Robot R01 in deep Sub-level 3 (-380m).',
+        narrative: 'NEXUS maintains continuous telemetry across 6 moving miners, 8 multi-gas sentinels, and Spidy Scout Robot R01 traversing Sub-level 3 (-380m).',
         keyPoint: 'Zero single point of failure: decentralized LoRa mesh self-organizes without surface internet.',
         action: () => {
           simEngine.restoreSystem();
@@ -38,10 +38,10 @@ export class PresentationTour {
       {
         id: 2,
         phase: 'understand',
-        title: 'Stage 2: UNDERSTAND – Methane Hazard & Explainable AI',
+        title: 'Stage 2: UNDERSTAND – Multi-Location Hazard & Wearable Tag Alerts',
         module: 'airisk',
-        narrative: 'Methane (CH4) spikes to 2.45% LEL at Extraction Face 4B. The Explainable AI (XAI) engine decomposes atmospheric, hydrological, and geotechnical risks in real time.',
-        keyPoint: 'XAI outputs plain-English causal rationales with confidence scores, eliminating black-box false alarms.',
+        narrative: 'Methane (CH4) spikes at the active extraction drift. Wearable bio-tags instantly alert nearby miners and broadcast redirected safe escape routes.',
+        keyPoint: 'Statutory threshold limits (CH4 < 0.75% LEL) enforce automated instantaneous warnings.',
         action: () => {
           simEngine.triggerGasLeak();
           state.pipelinePhase = 'understand';
@@ -50,10 +50,10 @@ export class PresentationTour {
       {
         id: 3,
         phase: 'predict',
-        title: 'Stage 3: PREDICT & PLAN – Worker SOS & Dynamic A* Routing',
+        title: 'Stage 3: PREDICT & PLAN – Worker SOS & Dual Route Planning',
         module: 'routes',
-        narrative: 'Worker W-03 (Rajesh Kumar) triggers an emergency SOS with heart rate 138 BPM. The pathfinder calculates 3 routes, selecting Route Alpha as the safest evacuation path.',
-        keyPoint: 'Multi-criteria optimization routes miners away from toxic gas eddys and rising drainage floods.',
+        narrative: 'Miner triggers emergency SOS. NEXUS pathfinder simultaneously computes the Miner Evacuation Egress Path and the First-Responder Surface Rescue Team Ingress Path.',
+        keyPoint: 'Dual-path trajectory ensures victims evacuate safely while rescue teams ingress with mandatory PPE guidance.',
         action: () => {
           simEngine.triggerWorkerSOS();
           state.pipelinePhase = 'plan';
@@ -62,22 +62,21 @@ export class PresentationTour {
       {
         id: 4,
         phase: 'rescue',
-        title: 'Stage 4: RESCUE – Scout Robot R01 Autonomous Reconnaissance',
+        title: 'Stage 4: RESCUE – Spidy Scout R-01 Rapid Reconnaissance & SLAM',
         module: 'robots',
-        narrative: 'Agile Hexapod Scout R01 (Arachne-1) navigates ahead with 360° RPLiDAR and FLIR thermal camera to establish victim contact and verify drift stability.',
-        keyPoint: 'Autonomous robotic SLAM mapping operates in zero-visibility and high-dust atmospheres.',
+        narrative: 'Hexapod Spidy Scout R01 sprints at 2.8 m/s to the incident sector, executes 360° RPLiDAR SLAM sweep, verifies victim presence via thermal IR, and assesses human rescue team feasibility.',
+        keyPoint: 'Rapid robotic recon prevents sending human rescuers into toxic or explosive atmospheres blindly.',
         action: () => {
-          state.robots.r01.status = 'DISPATCHED';
           state.pipelinePhase = 'rescue';
         }
       },
       {
         id: 5,
         phase: 'rescue',
-        title: 'Stage 5: FAILOVER RESILIENCE – Robot Jam & Autonomous Handover',
+        title: 'Stage 5: FAILOVER RESILIENCE – Spidy 1 Jam & Spidy Standby Handover',
         module: 'overview',
-        narrative: 'Simulated rockfall immobilizes Scout R01. Instantly, NEXUS detects telemetry loss, triggers failover, and commands Heavy Rescuer R02 Titan to inherit the mission!',
-        keyPoint: 'True autonomous resilience: no single robot failure halts the subterranean rescue operation.',
+        narrative: 'Simulated rockfall immobilizes Spidy 1. Instantly, Spidy Standby R-02 activates, assumes 100% SLAM coordinates, and deploys to deliver alternate escape paths!',
+        keyPoint: 'True autonomous robotics redundancy: identical hexapod kinematics ensure zero mission downtime.',
         action: () => {
           simEngine.triggerRobotFailure();
           state.pipelinePhase = 'rescue';
@@ -88,7 +87,7 @@ export class PresentationTour {
         phase: 'recover',
         title: 'Stage 6: RECOVER – Safe Extraction & Post-Incident Debrief',
         module: 'alerts',
-        narrative: 'R02 Titan delivers emergency O2 and safely extricates Worker W-03 to Surface Portal A. Full mission data is compiled into an audit-ready post-incident debrief report.',
+        narrative: 'Trapped personnel safely evacuate along Route Alpha to Surface Portal A. Full mission data is compiled into an audit-ready post-incident debrief report.',
         keyPoint: 'Complete lifecycle demonstration: SENSE → CONNECT → UNDERSTAND → PREDICT → PLAN → RESCUE → RECOVER.',
         action: () => {
           state.pipelinePhase = 'recover';

@@ -185,7 +185,9 @@ class NexusApp {
     this.renderOverviewDeck();
 
     // 2. Workers Deck
-    this.components.workers = new WorkerModule('deckWorkers');
+    this.components.workers = new WorkerModule('deckWorkers', (workerId) => {
+      this.components.map2D?.render();
+    });
 
     // 3. Sensors Deck
     this.components.sensors = new SensorModule('deckSensors');
@@ -298,10 +300,10 @@ class NexusApp {
             </div>
           </div>
 
-          <!-- R02 Titan -->
+          <!-- R02 Spidy Standby -->
           <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 8px 10px; border-radius: var(--radius-xs); display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 800; color: var(--amber-warn);">🚜 R-02 TITAN (HEAVY RESCUER)</div>
+              <div style="font-weight: 800; color: var(--amber-warn);">🕷️ R-02 ARACHNE-2 (SPIDY STANDBY)</div>
               <div style="font-size: 9.5px; color: var(--text-muted);">${r02.payload.split('+')[0]}</div>
             </div>
             <span class="nav-badge" style="background: var(--amber-tint); color: var(--amber-warn); font-size: 9.5px;">${r02.status}</span>
