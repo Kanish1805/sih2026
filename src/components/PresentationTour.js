@@ -1,5 +1,5 @@
 /**
- * NEXUS Tactical Scenario Demonstration Tour Mode (Light Theme)
+ * NEXUS Tactical Scenario Demonstration Tour Mode
  * 6-Stage Interactive Narrative Storyline
  */
 
@@ -15,8 +15,8 @@ export class PresentationTour {
     this.narrativeEl = document.getElementById('tourNarrativeText');
     this.keyPointEl = document.getElementById('tourKeyPoint');
     this.dotsEl = document.getElementById('tourDots');
-    this.onSwitchModule = options.onSwitchModule || (() => {});
-    this.onOpenDebrief = options.onOpenDebrief || (() => {});
+    this.onSwitchModule = options.onSwitchModule || (() => { });
+    this.onOpenDebrief = options.onOpenDebrief || (() => { });
 
     this.currentStage = 0;
     this.autoPlayTimer = null;
@@ -26,9 +26,9 @@ export class PresentationTour {
       {
         id: 1,
         phase: 'sense',
-        title: 'Stage 1: SENSE & CONNECT – Decentralized Subterranean Mesh',
+        title: 'Stage 1: SENSE & CONNECT – 6 Subterranean Levels & 16 Miners',
         module: 'overview',
-        narrative: 'NEXUS maintains continuous telemetry across 6 moving miners, 8 multi-gas sentinels, and Spidy Scout Robot R01 traversing Sub-level 3 (-380m).',
+        narrative: 'NEXUS maintains continuous telemetry across 16 moving Indian miners, 14 multi-gas sentinels, and Spidy Scout Robot R01 traversing across 6 subterranean levels down to -680m.',
         keyPoint: 'Zero single point of failure: decentralized LoRa mesh self-organizes without surface internet.',
         action: () => {
           simEngine.restoreSystem();
@@ -38,10 +38,10 @@ export class PresentationTour {
       {
         id: 2,
         phase: 'understand',
-        title: 'Stage 2: UNDERSTAND – Multi-Location Hazard & Wearable Tag Alerts',
-        module: 'airisk',
-        narrative: 'Methane (CH4) spikes at the active extraction drift. Wearable bio-tags instantly alert nearby miners and broadcast redirected safe escape routes.',
-        keyPoint: 'Statutory threshold limits (CH4 < 0.75% LEL) enforce automated instantaneous warnings.',
+        title: 'Stage 2: UNDERSTAND – Multi-Node Hazard Cycling & Trapped Stay-In-Place',
+        module: 'sensors',
+        narrative: 'Methane (CH4) spikes at a rotating extraction drift. Trapped miners stand still in place while wearable bio-tags broadcast the RED rescue path and GREEN safe escape route.',
+        keyPoint: 'Neural network risk model evaluates real-time atmospheric toxicity and geotechnical stability.',
         action: () => {
           simEngine.triggerGasLeak();
           state.pipelinePhase = 'understand';
@@ -50,10 +50,10 @@ export class PresentationTour {
       {
         id: 3,
         phase: 'predict',
-        title: 'Stage 3: PREDICT & PLAN – Worker SOS & Dual Route Planning',
+        title: 'Stage 3: PREDICT & PLAN – RED Rescue Ingress & GREEN Safe Evacuation',
         module: 'routes',
-        narrative: 'Miner triggers emergency SOS. NEXUS pathfinder simultaneously computes the Miner Evacuation Egress Path and the First-Responder Surface Rescue Team Ingress Path.',
-        keyPoint: 'Dual-path trajectory ensures victims evacuate safely while rescue teams ingress with mandatory PPE guidance.',
+        narrative: 'Miner triggers emergency SOS. NEXUS pathfinder simultaneously computes the RED First-Responder Surface Rescue Team Ingress Path and the GREEN Safe Evacuation Path.',
+        keyPoint: 'Dual-path trajectory ensures victims stay in place safely while rescue teams ingress with mandatory PPE guidance.',
         action: () => {
           simEngine.triggerWorkerSOS();
           state.pipelinePhase = 'plan';
@@ -62,9 +62,9 @@ export class PresentationTour {
       {
         id: 4,
         phase: 'rescue',
-        title: 'Stage 4: RESCUE – Spidy Scout R-01 Rapid Reconnaissance & SLAM',
+        title: 'Stage 4: RESCUE – Realistic Spidy Scout Rapid Reconnaissance & SLAM',
         module: 'robots',
-        narrative: 'Hexapod Spidy Scout R01 sprints at 2.8 m/s to the incident sector, executes 360° RPLiDAR SLAM sweep, verifies victim presence via thermal IR, and assesses human rescue team feasibility.',
+        narrative: 'Hexapod Spidy Scout R01 sprints at 2.8 m/s with realistic articulated 3-DOF leg kinematics, executes 360° RPLiDAR SLAM sweep, verifies victim presence via thermal IR, and clears human rescue entry.',
         keyPoint: 'Rapid robotic recon prevents sending human rescuers into toxic or explosive atmospheres blindly.',
         action: () => {
           state.pipelinePhase = 'rescue';
@@ -87,7 +87,7 @@ export class PresentationTour {
         phase: 'recover',
         title: 'Stage 6: RECOVER – Safe Extraction & Post-Incident Debrief',
         module: 'alerts',
-        narrative: 'Trapped personnel safely evacuate along Route Alpha to Surface Portal A. Full mission data is compiled into an audit-ready post-incident debrief report.',
+        narrative: 'Trapped personnel safely reach the safe refuge chamber / portal. Full mission data is compiled into an audit-ready post-incident debrief report.',
         keyPoint: 'Complete lifecycle demonstration: SENSE → CONNECT → UNDERSTAND → PREDICT → PLAN → RESCUE → RECOVER.',
         action: () => {
           state.pipelinePhase = 'recover';

@@ -1,12 +1,11 @@
 /**
  * NEXUS Real-Time Simulation Engine & Multi-Agent Orchestrator
  * Features:
- * - Dynamic multi-location hazard cycling across mine sectors
- * - Autonomous Spidy Robot Rapid Dispatch & SLAM Environmental Reconnaissance
- * - Worker bio-tag hazard alerts & personalized evacuation path redirection
- * - Continuous animated worker patrol movement (Real-Time Digital Twin)
- * - Surface Rescue Team Rapid Ingress Path computation
- * - Autonomous failover from Spidy Scout R01 to Spidy Standby R02
+ * - Dynamic multi-node accident cycling across all 6 subterranean levels
+ * - Trapped worker stand-in-place behavior during accidents
+ * - Dual Route Management: Surface Rescue Team RED route towards worker & Worker GREEN evacuation route to safe nodal point
+ * - Autonomous Spidy Robot Rapid Reconnaissance & SLAM Assessment
+ * - Automated progressive rescue mission execution
  */
 
 import { state, resetState, MINE_TOPOGRAPHY, HAZARD_LOCATIONS } from './state.js';
@@ -21,7 +20,7 @@ class SimulationEngine {
     this.lastTickTime = performance.now();
     this.telemetryAccumulator = 0;
     this.animationFrameId = null;
-    this.reconTimer = null;
+    this.rescueTimer = null;
   }
 
   start() {
@@ -106,19 +105,20 @@ class SimulationEngine {
     state.simTime += deltaSec;
     this.telemetryAccumulator += deltaSec;
 
-    // 1 Hz Telemetry & Environmental Update
+    // 1 Hz Telemetry & Neural Network Risk Inference
     if (this.telemetryAccumulator >= 1.0) {
       this.telemetryAccumulator = 0;
       this.updateTelemetry();
     }
 
-    // 60 FPS Entity Movements (Robots & Workers)
+    // 60 FPS Entity Movements (Robots, Moving Un-trapped Workers, Rescue Operations)
     this.updateRobotMotion(deltaSec);
     this.updateWorkerPositions(deltaSec);
+    this.updateRescueProgress(deltaSec);
   }
 
   updateTelemetry() {
-    // 1. Natural sensor noise & history tracking
+    // 1. Natural sensor noise & history tracking across all 14 Sentinel nodes
     state.sensors.forEach(s => {
       if (s.status !== 'OFFLINE') {
         s.temp = +(s.temp + (Math.random() - 0.5) * 0.05).toFixed(1);
@@ -134,21 +134,21 @@ class SimulationEngine {
       }
     });
 
-    // 2. Gas Plume Physics
+    // 2. Gas Plume Propagation at active accident node
     if (state.hazards.gasPlume.active) {
-      const targetSensor = state.sensors.find(s => s.id === (state.hazards.gasPlume.sensorId || 'SN-08'));
-      if (targetSensor && targetSensor.ch4 < 2.85) {
+      const targetSensor = state.sensors.find(s => s.id === state.hazards.gasPlume.sensorId) || state.sensors[state.sensors.length - 1];
+      if (targetSensor && targetSensor.ch4 < 2.95) {
         targetSensor.ch4 = +(targetSensor.ch4 + 0.12).toFixed(2);
-        targetSensor.co = Math.min(75, targetSensor.co + 3);
+        targetSensor.co = Math.min(85, targetSensor.co + 3);
         targetSensor.status = targetSensor.ch4 > 1.25 ? 'CRITICAL' : 'WARNING';
       }
       state.hazards.gasPlume.radius = Math.min(state.hazards.gasPlume.maxRadius, state.hazards.gasPlume.radius + 1.5);
     }
 
-    // 3. Flood Water Progression
+    // 3. Flood Water Progression at active sump node
     if (state.hazards.floodWater.active) {
-      const sumpSensor = state.sensors.find(s => s.id === 'SN-06');
-      if (sumpSensor && sumpSensor.waterLevel < 65) {
+      const sumpSensor = state.sensors.find(s => s.id === (state.hazards.floodWater.sensorId || 'SN-06'));
+      if (sumpSensor && sumpSensor.waterLevel < 70) {
         sumpSensor.waterLevel += 2;
         sumpSensor.status = sumpSensor.waterLevel > 30 ? 'CRITICAL' : 'WARNING';
       }
@@ -157,17 +157,17 @@ class SimulationEngine {
 
     // 4. Worker Biometrics
     state.workers.forEach(w => {
-      if (w.status === 'SOS' || w.sosActive) {
-        w.hr = Math.min(148, Math.max(130, w.hr + Math.floor((Math.random() - 0.45) * 3)));
-        w.spO2 = Math.max(90, w.spO2 - (Math.random() > 0.7 ? 1 : 0));
+      if (w.status === 'SOS' || w.status === 'TRAPPED' || w.sosActive) {
+        w.hr = Math.min(152, Math.max(132, w.hr + Math.floor((Math.random() - 0.45) * 3)));
+        w.spO2 = Math.max(89, w.spO2 - (Math.random() > 0.7 ? 1 : 0));
       } else if (w.tagWarning) {
-        w.hr = Math.min(118, Math.max(95, w.hr + Math.floor((Math.random() - 0.45) * 2)));
+        w.hr = Math.min(115, Math.max(92, w.hr + Math.floor((Math.random() - 0.45) * 2)));
       } else {
-        w.hr = Math.min(84, Math.max(68, w.hr + Math.floor((Math.random() - 0.5) * 2)));
+        w.hr = Math.min(82, Math.max(68, w.hr + Math.floor((Math.random() - 0.5) * 2)));
       }
     });
 
-    // 5. Update Explainable AI Risk Score
+    // 5. Update Backend Neural Network Risk Score
     const aiResult = calculateAIRisk();
     state.overallRisk = aiResult.score;
     state.riskCategory = aiResult.category;
@@ -180,27 +180,26 @@ class SimulationEngine {
   updateRobotMotion(deltaSec) {
     const r01 = state.robots.r01;
     const r02 = state.robots.r02;
-    const activeRobot = (!r01.isFailed && r01.status !== 'OFFLINE') ? r01 : r02;
 
     // R01 Spidy Scout Motion
     if (r01 && !r01.isFailed && r01.status !== 'OFFLINE') {
       r01.mappedCoverage = Math.min(100, +(r01.mappedCoverage + 0.05 * deltaSec).toFixed(1));
-      
+
       const dx = r01.targetX - r01.x;
       const dy = r01.targetY - r01.y;
       const dist = Math.hypot(dx, dy);
 
       if (dist > 4) {
-        const speed = (r01.status === 'SPRINTING_TO_INCIDENT' ? 65 : 25) * deltaSec;
+        const speed = (r01.status === 'SPRINTING_TO_INCIDENT' ? 70 : 25) * deltaSec;
         r01.x += (dx / dist) * speed;
         r01.y += (dy / dist) * speed;
       } else {
         if (r01.status === 'SPRINTING_TO_INCIDENT') {
           this.completeSpidyRecon(r01);
         } else {
-          // Normal patrol waypoint flipping
-          if (r01.targetX === 580) { r01.targetX = 140; r01.targetY = 280; }
-          else { r01.targetX = 580; r01.targetY = 410; }
+          // Continuous patrolling waypoint flipping across levels
+          if (r01.targetX >= 500) { r01.targetX = 160; r01.targetY = 230; }
+          else { r01.targetX = 560; r01.targetY = 420; }
         }
       }
     }
@@ -212,7 +211,7 @@ class SimulationEngine {
       const dist = Math.hypot(dx, dy);
 
       if (dist > 4) {
-        const speed = 75 * deltaSec;
+        const speed = 80 * deltaSec;
         r02.x += (dx / dist) * speed;
         r02.y += (dy / dist) * speed;
       } else {
@@ -229,76 +228,88 @@ class SimulationEngine {
     report.assignedRobotId = robot.id;
     report.timestamp = this.formatSimTime(state.simTime);
 
-    // Fetch live environmental telemetry at this node
     const nodeObj = MINE_TOPOGRAPHY.nodes[report.incidentNodeId] || MINE_TOPOGRAPHY.nodes['face_4b'];
     const matchingSensor = state.sensors.find(s => s.x === nodeObj.x && s.y === nodeObj.y) || state.sensors[state.sensors.length - 1];
 
-    report.ch4 = matchingSensor ? matchingSensor.ch4 : 2.45;
+    report.ch4 = matchingSensor ? matchingSensor.ch4 : 2.48;
     report.temp = matchingSensor ? matchingSensor.temp : 29.8;
     report.humidity = matchingSensor ? matchingSensor.humidity : 82;
     report.co = matchingSensor ? matchingSensor.co : 35;
     report.o2 = matchingSensor ? matchingSensor.o2 : 19.8;
 
-    // Check if human trapped near here
-    const nearbyWorker = state.workers.find(w => Math.hypot(w.x - nodeObj.x, w.y - nodeObj.y) < 80);
+    // Check if worker is trapped near this node
+    const nearbyWorker = state.workers.find(w => Math.hypot(w.x - nodeObj.x, w.y - nodeObj.y) < 90 || w.nodeId === report.incidentNodeId);
     if (nearbyWorker) {
+      nearbyWorker.status = 'TRAPPED';
+      nearbyWorker.motion = 'STAND_STILL'; // Trapped worker stands still in place!
       report.humanDetected = true;
       report.humanName = `${nearbyWorker.name} (${nearbyWorker.id})`;
-      report.humanStatus = nearbyWorker.status === 'SOS' ? 'TRAPPED_INJURED' : 'CONSCIOUS_AWAITING_EXTRACTION';
+      report.humanStatus = 'TRAPPED_STANDING_STILL_AWAITING_RESCUE';
     } else {
       report.humanDetected = false;
       report.humanName = 'No Personnel in Blast Radius';
       report.humanStatus = 'CLEAR';
     }
 
-    // Check if Human Rescue Team is allowed to enter without SCBA
     const isGasCrit = report.ch4 > 1.25 || report.co > 50 || report.o2 < 19.5;
     report.rescueTeamAllowed = !isGasCrit;
-    report.rescueTeamRationale = isGasCrit 
-      ? `Explosive/Toxic gas envelope (CH4: ${report.ch4}% LEL, CO: ${report.co}ppm) exceeds human safety limits. SCBA 60-min mandatory.`
+    report.rescueTeamRationale = isGasCrit
+      ? `Explosive/Toxic gas envelope (CH4: ${report.ch4}% LEL, CO: ${report.co}ppm) exceeds human safety limits. SCBA 60-min mandatory for rescue team ingress.`
       : `Atmospheric envelope safe for First-Responder Human Rescue Team ingress.`;
 
-    // Compute alternate safe path for trapped worker
+    // Compute RED path (Rescue Team Ingress) and GREEN path (Worker Safe Evacuation)
     if (nearbyWorker) {
       const evacRoute = pathfinder.calculateWorkerEvacuationRoute(nearbyWorker.id);
       report.alternatePathNodes = evacRoute.pathNodes;
-      report.alternatePathName = `Alternate Evacuation Route (via ${evacRoute.pathNodes[2] || 'Shaft 1'})`;
+      report.alternatePathName = `Safe Evacuation Route (via ${evacRoute.safeExitNode})`;
       nearbyWorker.tagRedirectRoute = evacRoute;
     }
 
-    // Calculate Rescue Team Ingress Path
-    pathfinder.calculateRescueTeamIngressRoute(report.incidentNodeId);
+    pathfinder.calculateRescueTeamIngressRoute(report.incidentNodeId, nearbyWorker ? nearbyWorker.id : null);
 
     soundEngine.playSonarPing();
     this.emitAlert(
       'SPIDY_RECON',
       `🕷️ ${robot.name} Completed SLAM Reconnaissance at ${report.incidentName}`,
-      `SLAM Sweep: CH4: ${report.ch4}% LEL | Temp: ${report.temp}°C | Human Found: ${report.humanDetected ? report.humanName : 'None'} | Rescue Ingress: ${report.rescueTeamAllowed ? 'SAFE' : 'SCBA MANDATORY'} | Alternate escape path broadcast to tags.`,
+      `SLAM Sweep: CH4: ${report.ch4}% LEL | Temp: ${report.temp}°C | Human Found: ${report.humanDetected ? report.humanName : 'None'} | Rescue Ingress RED path established & GREEN escape path broadcast.`,
       'warning'
     );
   }
 
   updateWorkerPositions(deltaSec) {
     state.workers.forEach(w => {
-      // If worker has an active evacuation route, step towards the safe exit!
-      if (w.tagRedirectRoute && w.tagRedirectRoute.pathNodes && w.tagRedirectRoute.pathNodes.length > 0) {
+      // 1. If worker is TRAPPED or in SOS, they STAND STILL in place (DO NOT MOVE)
+      if (w.status === 'TRAPPED' || w.status === 'SOS' || w.motion === 'STAND_STILL' || w.motion === 'MAN_DOWN') {
+        w.motion = 'STAND_STILL'; // Strictly stand in same position
+        return;
+      }
+
+      // 2. If worker is actively being escorted / evacuating after rescue
+      if (w.status === 'BEING_RESCUED' && w.tagRedirectRoute && w.tagRedirectRoute.pathNodes?.length > 0) {
         w.motion = 'EVACUATING';
-        const targetNodeId = w.tagRedirectRoute.pathNodes[1] || 'shaft_top';
+        const targetNodeId = w.tagRedirectRoute.safeExitNode || 'portal_a';
         const targetNode = MINE_TOPOGRAPHY.nodes[targetNodeId];
         if (targetNode) {
           const dx = targetNode.x - w.x;
           const dy = targetNode.y - w.y;
           const dist = Math.hypot(dx, dy);
-          if (dist > 5) {
-            const speed = 18 * deltaSec;
+          if (dist > 6) {
+            const speed = 24 * deltaSec;
             w.x += (dx / dist) * speed;
             w.y += (dy / dist) * speed;
+          } else {
+            w.status = 'SAFE';
+            w.tagWarning = null;
+            w.motion = 'SAFE_AT_NODAL_POINT';
           }
         }
-      } else if (w.status !== 'SOS' && w.motion !== 'MAN_DOWN') {
-        // Continuous smooth patrol movement along assigned drift
+        return;
+      }
+
+      // 3. Normal nominal patrol along assigned drift
+      if (w.status === 'NORMAL') {
         w.motion = 'WALKING';
-        w.patrolProgress += 0.08 * deltaSec * (w.patrolDir || 1);
+        w.patrolProgress += 0.06 * deltaSec * (w.patrolDir || 1);
 
         if (w.patrolProgress >= 1.0) {
           w.patrolProgress = 1.0;
@@ -314,13 +325,41 @@ class SimulationEngine {
     });
   }
 
+  updateRescueProgress(deltaSec) {
+    const rescue = state.rescueTeamRoute;
+    if (!rescue || !rescue.active || !rescue.inProgress) return;
+
+    // Advance rescue team along RED route towards trapped worker
+    rescue.progressStep += 0.35 * deltaSec;
+    const pathNodes = rescue.pathNodes || [];
+    const totalSteps = pathNodes.length - 1;
+
+    if (rescue.progressStep >= totalSteps) {
+      // Rescue team has reached the trapped worker!
+      rescue.inProgress = false;
+      const victim = state.workers.find(w => w.id === rescue.targetWorkerId || w.status === 'TRAPPED' || w.status === 'SOS');
+      if (victim) {
+        victim.status = 'BEING_RESCUED';
+        victim.tagWarning = `🚑 RESCUE TEAM CONTACT ESTABLISHED: Proceeding along GREEN route to safe refuge nodal point!`;
+        soundEngine.playSuccessFanfare();
+        this.emitAlert(
+          'RESCUE_CONTACT',
+          `Rescue Team Contact Established with ${victim.name}`,
+          `First-responders reached victim at ${rescue.destination} via RED route. Extrication initiated; escorting along GREEN route to safe refuge chamber.`,
+          'normal'
+        );
+      }
+    }
+  }
+
   // =========================================================================
-  // Multi-Location Dynamic Scenario Triggers
+  // Multi-Node Dynamic Scenario Triggers (Rotates to Different Node Each Time)
   // =========================================================================
 
   triggerGasLeak() {
-    state.hazardCycleIdx = (state.hazardCycleIdx + 1) % HAZARD_LOCATIONS.length;
-    const loc = HAZARD_LOCATIONS[state.hazardCycleIdx];
+    const gasLocations = HAZARD_LOCATIONS.filter(h => h.hazardType === 'GAS');
+    state.hazardCycleIdx = (state.hazardCycleIdx + 1) % gasLocations.length;
+    const loc = gasLocations[state.hazardCycleIdx];
 
     state.hazards.gasPlume.active = true;
     state.hazards.gasPlume.epicenterNodeId = loc.nodeId;
@@ -340,14 +379,24 @@ class SimulationEngine {
       targetSensor.status = 'CRITICAL';
     }
 
-    // Alert all workers on this level with wearable tag warnings and redirect paths
-    state.workers.forEach(w => {
-      if (w.level === loc.level || Math.hypot(w.x - loc.x, w.y - loc.y) < 140) {
-        w.tagWarning = `⚠️ HAZARD ALERT: Methane Spike (2.48% LEL) at ${loc.name}. Evacuate along redirected green path immediately!`;
-        w.tagRedirectRoute = pathfinder.calculateWorkerEvacuationRoute(w.id);
-        w.status = 'WARNING';
-      }
-    });
+    // Identify worker closest to this incident node -> worker is TRAPPED & STANDS STILL
+    let trappedWorker = state.workers.find(w => w.nodeId === loc.nodeId || w.level === loc.level);
+    if (!trappedWorker) {
+      trappedWorker = state.workers[state.hazardCycleIdx % state.workers.length];
+    }
+
+    trappedWorker.status = 'TRAPPED';
+    trappedWorker.sosActive = true;
+    trappedWorker.motion = 'STAND_STILL'; // Trapped worker stands still in same position!
+    trappedWorker.tagWarning = `⚠️ DANGER: Methane Spike (2.48% LEL) at ${loc.name}. Stand still; RED rescue team dispatched & GREEN safe route illuminated!`;
+    state.selectedWorkerId = trappedWorker.id;
+
+    // Calculate RED path (Rescue Team Ingress) & GREEN path (Worker Safe Evacuation)
+    const evacRoute = pathfinder.calculateWorkerEvacuationRoute(trappedWorker.id);
+    trappedWorker.tagRedirectRoute = evacRoute;
+    pathfinder.calculateRescueTeamIngressRoute(loc.nodeId, trappedWorker.id);
+    state.rescueTeamRoute.inProgress = true;
+    state.rescueTeamRoute.progressStep = 0;
 
     // Rapidly dispatch Spidy Scout (or Spidy Standby)
     const spidy = (!state.robots.r01.isFailed && state.robots.r01.status !== 'OFFLINE') ? state.robots.r01 : state.robots.r02;
@@ -363,67 +412,83 @@ class SimulationEngine {
 
     this.emitAlert(
       'ATMOSPHERIC_ALERT',
-      `Methane (CH4) Outbreak at ${loc.name}`,
-      `CH4 spiked to 2.48% LEL on Sentinel ${loc.sensorId}. Wearable tag warning broadcast to workers. 🕷️ ${spidy.name} dispatched at 2.8 m/s for instant SLAM reconnaissance.`,
+      `Methane Outbreak at ${loc.name}`,
+      `CH4 spiked to 2.48% LEL on Sentinel ${loc.sensorId}. Miner ${trappedWorker.name} trapped in drift (standing in place). RED rescue path & GREEN evacuation route plotted!`,
       'warning'
     );
   }
 
   triggerFlood() {
+    const floodLocations = HAZARD_LOCATIONS.filter(h => h.hazardType === 'FLOOD');
+    state.floodCycleIdx = (state.floodCycleIdx + 1) % floodLocations.length;
+    const loc = floodLocations[state.floodCycleIdx];
+
     state.hazards.floodWater.active = true;
-    state.hazards.floodWater.inundationRateCmMin = 8.5;
+    state.hazards.floodWater.epicenterNodeId = loc.nodeId;
+    state.hazards.floodWater.epicenterX = loc.x;
+    state.hazards.floodWater.epicenterY = loc.y;
+    state.hazards.floodWater.epicenterZ = loc.z;
+    state.hazards.floodWater.sensorId = loc.sensorId;
+    state.hazards.floodWater.inundationRateCmMin = 9.2;
     state.hazards.floodWater.isBlockedL2West = true;
     state.pipelinePhase = 'plan';
 
-    const sumpSensor = state.sensors.find(s => s.id === 'SN-06');
+    const sumpSensor = state.sensors.find(s => s.id === loc.sensorId);
     if (sumpSensor) {
       sumpSensor.waterLevel = 48;
       sumpSensor.status = 'CRITICAL';
     }
 
-    // Alert L2 workers
-    state.workers.forEach(w => {
-      if (w.level === 'l2') {
-        w.tagWarning = `🌊 INUNDATION WARNING: Sump water 48cm deep. Haulage Incline blocked. Rerouting via Shaft 1 Hoist.`;
-        w.tagRedirectRoute = pathfinder.calculateWorkerEvacuationRoute(w.id);
-        w.status = 'WARNING';
-      }
-    });
+    // Trapped worker on this flooded level stands still
+    const affectedWorker = state.workers.find(w => w.level === loc.level) || state.workers[3];
+    affectedWorker.status = 'TRAPPED';
+    affectedWorker.motion = 'STAND_STILL'; // Stands still in place!
+    affectedWorker.tagWarning = `🌊 INUNDATION WARNING: Water depth 48cm at ${loc.name}. Stand still; Surface rescue team en route!`;
+
+    const evacRoute = pathfinder.calculateWorkerEvacuationRoute(affectedWorker.id);
+    affectedWorker.tagRedirectRoute = evacRoute;
+    pathfinder.calculateRescueTeamIngressRoute(loc.nodeId, affectedWorker.id);
+    state.rescueTeamRoute.inProgress = true;
+    state.rescueTeamRoute.progressStep = 0;
 
     const spidy = (!state.robots.r01.isFailed && state.robots.r01.status !== 'OFFLINE') ? state.robots.r01 : state.robots.r02;
     spidy.status = 'SPRINTING_TO_INCIDENT';
-    spidy.targetX = 150;
-    spidy.targetY = 340;
+    spidy.targetX = loc.x;
+    spidy.targetY = loc.y;
 
     state.reconReport.inTransit = true;
-    state.reconReport.incidentNodeId = 'sump_l2';
-    state.reconReport.incidentName = 'Drainage Sump Pump Station (-260m)';
+    state.reconReport.incidentNodeId = loc.nodeId;
+    state.reconReport.incidentName = loc.name;
     state.reconReport.incidentType = 'FLASH_FLOOD_INUNDATION';
 
     this.emitAlert(
       'FLOOD_WARNING',
-      'Rapid Inundation in Sub-level 2 Sump',
-      `Drainage Sump water level reached 48 cm. Route Beta flagged IMPASSABLE. Redirected safe evacuation path sent to worker tags. 🕷️ ${spidy.name} sprinting to inspect drainage barrier.`,
+      `Rapid Inundation at ${loc.name}`,
+      `Water level reached 48 cm on Sentinel ${loc.sensorId}. Worker ${affectedWorker.name} trapped. RED rescue ingress path & GREEN safe route established!`,
       'warning'
     );
   }
 
   triggerWorkerSOS() {
-    // Cycle through miners for SOS
+    // Cycle through miners for SOS across different tunnels
     const availableWorkers = state.workers.filter(w => !w.sosActive);
-    const targetWorker = availableWorkers.length > 0 ? availableWorkers[Math.floor(Math.random() * availableWorkers.length)] : state.workers[2];
+    const targetWorker = availableWorkers.length > 0 ? availableWorkers[Math.floor(Math.random() * availableWorkers.length)] : state.workers[6];
 
     targetWorker.status = 'SOS';
     targetWorker.sosActive = true;
-    targetWorker.motion = 'MAN_DOWN';
-    targetWorker.hr = 142;
+    targetWorker.motion = 'STAND_STILL'; // Trapped worker stands still in place!
+    targetWorker.hr = 144;
     targetWorker.spO2 = 91;
-    targetWorker.tagWarning = `🚨 EMERGENCY SOS BEACON ACTIVE: Standby for autonomous Spidy recon & surface rescue team ingress.`;
+    targetWorker.tagWarning = `🚨 EMERGENCY SOS BEACON ACTIVE: Stand still; RED rescue team en route & GREEN evacuation route illuminated.`;
     state.pipelinePhase = 'rescue';
     state.selectedWorkerId = targetWorker.id;
 
-    // Calculate Rescue Team Ingress Path directly to this worker
-    pathfinder.calculateRescueTeamIngressRoute(targetWorker.nodeId || 'face_4b');
+    // Calculate RED Rescue Team Route & GREEN Worker Evac Route
+    const evacRoute = pathfinder.calculateWorkerEvacuationRoute(targetWorker.id);
+    targetWorker.tagRedirectRoute = evacRoute;
+    pathfinder.calculateRescueTeamIngressRoute(targetWorker.nodeId || 'face_4b', targetWorker.id);
+    state.rescueTeamRoute.inProgress = true;
+    state.rescueTeamRoute.progressStep = 0;
 
     // Rapid dispatch Spidy
     const spidy = (!state.robots.r01.isFailed && state.robots.r01.status !== 'OFFLINE') ? state.robots.r01 : state.robots.r02;
@@ -433,13 +498,13 @@ class SimulationEngine {
 
     state.reconReport.inTransit = true;
     state.reconReport.incidentNodeId = targetWorker.nodeId || 'face_4b';
-    state.reconReport.incidentName = `${targetWorker.name}'s Work Sector (${targetWorker.level.toUpperCase()})`;
+    state.reconReport.incidentName = `${targetWorker.name}'s Sector (${targetWorker.level.toUpperCase()})`;
     state.reconReport.incidentType = 'PERSONNEL_SOS_INJURY';
 
     this.emitAlert(
       'CRITICAL_SOS',
       `EMERGENCY SOS: ${targetWorker.name} (${targetWorker.id})`,
-      `Man-Down beacon triggered at ${targetWorker.level.toUpperCase()} (${targetWorker.role}). Heart rate 142 BPM. 🕷️ ${spidy.name} sprinting to conduct thermal scan & deliver alternate evacuation path. Surface rescue team ingress route established!`,
+      `Man-Down beacon triggered at ${targetWorker.level.toUpperCase()} (${targetWorker.role}). Worker standing still in position. RED rescue team dispatched & GREEN route calculated.`,
       'critical'
     );
   }
@@ -460,41 +525,19 @@ class SimulationEngine {
       'critical'
     );
 
-    // Autonomous Failover Sequence to Spidy Standby R02
     setTimeout(() => {
       r02.status = 'SPRINTING_TO_INCIDENT';
       r02.activeTransfer = true;
-      r02.targetX = r01.targetX || 580;
-      r02.targetY = r01.targetY || 410;
+      r02.targetX = r01.targetX || 560;
+      r02.targetY = r01.targetY || 420;
 
       this.emitAlert(
         'AI_FAILOVER',
         'Autonomous Handover: Spidy Standby R-02 Deployed',
-        'R-02 assumed 100% SLAM recon coordinates from R-01. Sprinting at 3.2 m/s to complete atmospheric analysis & alternate path broadcasting!',
+        'R-02 assumed 100% SLAM recon coordinates. Sprinting at 3.2 m/s to complete atmospheric sweep & route broadcasting!',
         'warning'
       );
     }, 1000);
-  }
-
-  triggerNodeFailure() {
-    const candidateSensors = state.sensors.filter(s => s.id !== 'SN-01' && s.status !== 'OFFLINE');
-    const targetSensor = candidateSensors.length > 0 ? candidateSensors[Math.floor(Math.random() * candidateSensors.length)] : state.sensors[4];
-
-    targetSensor.status = 'OFFLINE';
-    state.pipelinePhase = 'connect';
-
-    state.meshLinks.forEach(link => {
-      if (link.from === targetSensor.id || link.to === targetSensor.id) {
-        link.active = false;
-      }
-    });
-
-    this.emitAlert(
-      'COMM_FAILOVER',
-      `Sentinel Node ${targetSensor.id} (${targetSensor.name}) Link Severed`,
-      `LoRa mesh packet drop at ${targetSensor.location}. Decentralized dynamic routing self-healed, bypassing severed link.`,
-      'warning'
-    );
   }
 
   restoreSystem() {
@@ -503,7 +546,7 @@ class SimulationEngine {
     this.emitAlert(
       'SYSTEM_RESET',
       'NEXUS Subterranean Safe Mode Restored',
-      'All atmospheric, water, robot, worker wearable tags, and mesh telemetry normalized to nominal baseline.',
+      'All 6 subterranean levels, atmospheric, water, robot, 16 worker bio-tags, and 14 mesh nodes normalized to baseline.',
       'normal'
     );
   }

@@ -1,8 +1,9 @@
 /**
- * NEXUS Worker Bio-Telemetry & Wearable Tag HUD Module (Light Theme)
+ * NEXUS Worker Bio-Telemetry & Wearable Tag HUD Module
  * Features:
- * - 6 Personnel Bio-Telemetry cards with live ECG waveforms
- * - Wearable Tag Hazard Alert Banners & Redirected Path Tracing
+ * - 16 Indian Personnel Bio-Telemetry cards across 6 Subterranean Levels
+ * - Live animated ECG waveforms and biometric monitoring
+ * - Wearable Tag Hazard Alert Banners & Trapped Status
  * - Dynamic single-click SOS trigger & map route inspection
  */
 
@@ -27,30 +28,31 @@ export class WorkerModule {
   render() {
     if (!this.container) return;
     const workers = state.workers || [];
+    const trappedCount = workers.filter(w => w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive).length;
 
     this.container.innerHTML = `
       <div class="card-header">
         <div class="card-title-group">
           <i data-lucide="users" style="color: var(--green-safe);"></i>
-          <span class="card-title">SUBTERRANEAN PERSONNEL & WEARABLE TAGS</span>
+          <span class="card-title">SUBTERRANEAN PERSONNEL & WEARABLE TAGS (16 MINERS)</span>
         </div>
         <div class="card-actions">
-          <span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe); font-weight: 800;">
-            6 ACTIVE BIO-TAGS LOCKED
+          <span class="nav-badge" style="background: ${trappedCount > 0 ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${trappedCount > 0 ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">
+            ${trappedCount > 0 ? `🚨 ${trappedCount} MINER(S) TRAPPED` : '16 ACTIVE BIO-TAGS LOCKED'}
           </span>
         </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         ${workers.map(w => {
-          const isSos = w.status === 'SOS' || w.sosActive;
-          const isWarn = w.tagWarning !== null || w.status === 'WARNING';
-          const isSelected = w.id === state.selectedWorkerId;
-          const cardBorder = isSos ? 'var(--red-crit)' : (isWarn ? 'var(--amber-warn)' : (isSelected ? 'var(--blue-primary)' : 'var(--border-subtle)'));
-          const badgeBg = isSos ? 'var(--red-tint)' : (isWarn ? 'var(--amber-warn)' : 'var(--green-tint)');
-          const badgeColor = isSos ? 'var(--red-crit)' : (isWarn ? '#ffffff' : 'var(--green-safe)');
+      const isTrapped = w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive;
+      const isWarn = w.tagWarning !== null || w.status === 'WARNING';
+      const isSelected = w.id === state.selectedWorkerId;
+      const cardBorder = isTrapped ? 'var(--red-crit)' : (isWarn ? 'var(--amber-warn)' : (isSelected ? 'var(--blue-primary)' : 'var(--border-subtle)'));
+      const badgeBg = isTrapped ? 'var(--red-tint)' : (isWarn ? 'var(--amber-warn)' : 'var(--green-tint)');
+      const badgeColor = isTrapped ? 'var(--red-crit)' : (isWarn ? '#ffffff' : 'var(--green-safe)');
 
-          return `
+      return `
             <div class="nexus-card worker-card" data-worker-id="${w.id}" style="border-color: ${cardBorder}; cursor: pointer; padding: 10px 12px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
                 <div>
@@ -61,7 +63,7 @@ export class WorkerModule {
                   <div style="font-size: 10.5px; color: var(--text-muted); font-weight: 600;">${w.role} (${w.level.toUpperCase()})</div>
                 </div>
                 <span class="nav-badge" style="background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; font-size: 9.5px;">
-                  ${isSos ? '🚨 SOS' : (isWarn ? '⚠️ WARNING' : 'NORMAL')}
+                  ${isTrapped ? '🚨 TRAPPED (STAND STILL)' : (isWarn ? '⚠️ WARNING' : 'NORMAL')}
                 </span>
               </div>
 
@@ -74,13 +76,13 @@ export class WorkerModule {
 
               <!-- Live Animated ECG Waveform -->
               <div style="background: #0f172a; border-radius: var(--radius-xs); padding: 4px; margin-bottom: 8px; position: relative;">
-                <canvas id="ecg_${w.id}" width="180" height="38" style="width: 100%; height: 38px; display: block;"></canvas>
-                <div style="position: absolute; right: 8px; top: 4px; font-family: var(--font-mono); font-size: 10px; font-weight: 800; color: ${isSos ? '#ef4444' : '#10b981'};">
+                <canvas id="ecg_${w.id}" width="180" height="36" style="width: 100%; height: 36px; display: block;"></canvas>
+                <div style="position: absolute; right: 8px; top: 4px; font-family: var(--font-mono); font-size: 10px; font-weight: 800; color: ${isTrapped ? '#ef4444' : '#10b981'};">
                   ${w.hr} BPM
                 </div>
               </div>
 
-              <!-- Metrics -->
+              <!-- Metrics Matrix -->
               <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-family: var(--font-mono); font-size: 9.5px; margin-bottom: 8px;">
                 <div style="background: var(--bg-secondary); padding: 3px 5px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
                   <div style="font-size: 7.5px; color: var(--text-muted); font-weight: 700;">SpO2</div>
@@ -88,7 +90,7 @@ export class WorkerModule {
                 </div>
                 <div style="background: var(--bg-secondary); padding: 3px 5px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
                   <div style="font-size: 7.5px; color: var(--text-muted); font-weight: 700;">MOTION</div>
-                  <div style="font-weight: 800; color: var(--blue-primary);">${w.motion}</div>
+                  <div style="font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : 'var(--blue-primary)'};">${isTrapped ? 'STAND STILL' : w.motion}</div>
                 </div>
                 <div style="background: var(--bg-secondary); padding: 3px 5px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
                   <div style="font-size: 7.5px; color: var(--text-muted); font-weight: 700;">BATTERY</div>
@@ -96,19 +98,19 @@ export class WorkerModule {
                 </div>
               </div>
 
-              <!-- Tag Path Tracing & SOS Action -->
+              <!-- Action Controls -->
               <div style="display: flex; gap: 6px;">
                 <button class="btn-scenario btn-restore btn-trace-path" data-worker-id="${w.id}" style="flex: 1; font-size: 10px; padding: 4px; justify-content: center;">
                   <i data-lucide="navigation" style="width: 12px; height: 12px;"></i>
                   <span>Trace Safe Evac Route</span>
                 </button>
-                <button class="btn-scenario ${isSos ? 'btn-danger-action' : 'btn-warning-action'} btn-toggle-worker-sos" data-worker-id="${w.id}" style="font-size: 10px; padding: 4px 8px;">
-                  ${isSos ? 'SOS Active' : 'Trigger SOS'}
+                <button class="btn-scenario ${isTrapped ? 'btn-danger-action' : 'btn-warning-action'} btn-toggle-worker-sos" data-worker-id="${w.id}" style="font-size: 10px; padding: 4px 8px;">
+                  ${isTrapped ? 'Trapped Active' : 'Trigger SOS'}
                 </button>
               </div>
             </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
     `;
 
@@ -135,12 +137,12 @@ export class WorkerModule {
       }
 
       // ECG Line
-      const isSos = w.status === 'SOS' || w.sosActive;
-      ctx.strokeStyle = isSos ? '#ef4444' : '#10b981';
+      const isTrapped = w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive;
+      ctx.strokeStyle = isTrapped ? '#ef4444' : '#10b981';
       ctx.lineWidth = 1.6;
       ctx.beginPath();
 
-      const freq = isSos ? 0.09 : 0.05;
+      const freq = isTrapped ? 0.09 : 0.05;
       const midY = height / 2;
 
       for (let x = 0; x < width; x++) {
@@ -160,7 +162,6 @@ export class WorkerModule {
   }
 
   bindEvents() {
-    // Trace Route button
     this.container.querySelectorAll('.btn-trace-path').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -176,23 +177,28 @@ export class WorkerModule {
       };
     });
 
-    // Toggle SOS button
     this.container.querySelectorAll('.btn-toggle-worker-sos').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
         const id = btn.getAttribute('data-worker-id');
         const w = state.workers.find(wk => wk.id === id);
         if (w) {
-          if (w.status === 'SOS' || w.sosActive) {
+          if (w.status === 'SOS' || w.status === 'TRAPPED' || w.sosActive) {
             w.status = 'NORMAL';
             w.sosActive = false;
+            w.motion = 'WALKING';
             w.tagWarning = null;
           } else {
-            w.status = 'SOS';
+            w.status = 'TRAPPED';
             w.sosActive = true;
-            w.tagWarning = `🚨 EMERGENCY SOS BEACON ACTIVE`;
+            w.motion = 'STAND_STILL'; // Trapped worker stands still in place!
+            w.tagWarning = `🚨 EMERGENCY TRAPPED BEACON: Stand still in place. RED rescue team dispatched & GREEN route calculated.`;
             state.selectedWorkerId = w.id;
-            pathfinder.calculateRescueTeamIngressRoute(w.nodeId || 'face_4b');
+            const evac = pathfinder.calculateWorkerEvacuationRoute(w.id);
+            w.tagRedirectRoute = evac;
+            pathfinder.calculateRescueTeamIngressRoute(w.nodeId || 'face_4b', w.id);
+            state.rescueTeamRoute.inProgress = true;
+            state.rescueTeamRoute.progressStep = 0;
             soundEngine.playEmergencySiren();
           }
           this.render();

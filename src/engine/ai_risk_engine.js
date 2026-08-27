@@ -1,47 +1,62 @@
 /**
- * NEXUS Explainable AI (XAI) Risk Engine
+ * NEXUS Explainable AI (XAI) Risk Engine Bridge
+ * Integrates with Backend Multi-Layer Perceptron Neural Network (4-Epochs Trained)
  * Computes multi-factor composite subterranean danger score,
  * generates natural language rationales, and models 15-minute predictive risk curves.
  */
 
 import { state } from './state.js';
+import { backendRiskModel } from '../backend/RiskNeuralNetwork.js';
 
 export function calculateAIRisk() {
-  const sensors = state.sensors;
-  const workers = state.workers;
-  const hazards = state.hazards;
+  const sensors = state.sensors || [];
+  const workers = state.workers || [];
+  const hazards = state.hazards || {};
 
-  // 1. Atmospheric Toxicity Score (0 - 35 pts)
-  let maxCH4 = Math.max(...sensors.map(s => s.ch4));
-  let maxCO = Math.max(...sensors.map(s => s.co));
-  let gasScore = Math.min(35, (maxCH4 / 2.5) * 20 + (maxCO / 50) * 15);
+  // Find peak telemetry across all distributed sentinel nodes
+  let maxCH4 = Math.max(...sensors.map(s => s.ch4 || 0), 0.02);
+  let maxCO = Math.max(...sensors.map(s => s.co || 0), 2);
+  let minO2 = Math.min(...sensors.map(s => s.o2 || 20.9), 20.9);
+  let maxTemp = Math.max(...sensors.map(s => s.temp || 25), 25);
+  let maxHum = Math.max(...sensors.map(s => s.humidity || 60), 60);
+  let maxWater = Math.max(...sensors.map(s => s.waterLevel || 0), 0);
+  let maxVib = Math.max(...sensors.map(s => s.vibration || 0.1), 0.1);
 
-  // 2. Inundation Flood Threat Score (0 - 25 pts)
-  let maxWater = Math.max(...sensors.map(s => s.waterLevel));
-  let floodScore = Math.min(25, (maxWater / 60) * 25);
+  // Run real-time forward pass on Backend Neural Network
+  const nnInput = {
+    ch4: maxCH4,
+    co: maxCO,
+    o2: minO2,
+    temp: maxTemp,
+    humidity: maxHum,
+    waterLevel: maxWater,
+    vibration: maxVib
+  };
 
-  // 3. Geotechnical & Seismic Score (0 - 15 pts)
-  let maxVib = Math.max(...sensors.map(s => s.vibration));
-  let seismicScore = Math.min(15, (maxVib / 3.0) * 15);
+  const nnResult = backendRiskModel.predict(nnInput);
 
-  // 4. Worker Exposure & Proximity Score (0 - 15 pts)
-  let sosCount = workers.filter(w => w.status === 'SOS' || w.sosActive).length;
-  let trappedCount = workers.filter(w => w.status === 'TRAPPED').length;
-  let flaggedCount = workers.filter(w => w.status === 'FLAGGED').length;
-  let workerScore = Math.min(15, (sosCount * 10) + (trappedCount * 6) + (flaggedCount * 2));
+  // Calculate Subterranean Risk Components for XAI visualization
+  const gasScore = Math.min(35, Math.round((maxCH4 / 2.5) * 20 + (maxCO / 60) * 15));
+  const floodScore = Math.min(25, Math.round((maxWater / 50) * 25));
+  const seismicScore = Math.min(15, Math.round((maxVib / 2.0) * 15));
 
-  // 5. Mesh Communication & Node Drops (0 - 10 pts)
-  let offlineNodes = sensors.filter(s => s.status === 'OFFLINE').length;
-  let commScore = Math.min(10, offlineNodes * 5);
+  const sosCount = workers.filter(w => w.status === 'SOS' || w.sosActive).length;
+  const trappedCount = workers.filter(w => w.status === 'TRAPPED').length;
+  const workerScore = Math.min(15, (sosCount * 10) + (trappedCount * 6));
 
-  // Composite Score
-  let totalScore = Math.round(gasScore + floodScore + seismicScore + workerScore + commScore);
-  totalScore = Math.max(8, Math.min(100, totalScore));
+  const offlineNodes = sensors.filter(s => s.status === 'OFFLINE').length;
+  const commScore = Math.min(10, offlineNodes * 5);
 
-  let category = 'SAFE';
-  if (totalScore >= 80) category = 'CRITICAL';
-  else if (totalScore >= 55) category = 'HIGH_RISK';
-  else if (totalScore >= 25) category = 'WARNING';
+  let compositeScore = nnResult.riskScore;
+  if (sosCount > 0 || trappedCount > 0) {
+    compositeScore = Math.max(compositeScore, 75);
+  }
+
+  let category = nnResult.category;
+  if (compositeScore >= 80) category = 'CRITICAL';
+  else if (compositeScore >= 55) category = 'HIGH_RISK';
+  else if (compositeScore >= 25) category = 'WARNING';
+  else category = 'SAFE';
 
   // Generate dynamic Explainable AI (XAI) Natural Language Rationales
   const explanations = [];
@@ -49,37 +64,28 @@ export function calculateAIRisk() {
   if (maxCH4 > 1.25) {
     explanations.push({
       factor: 'ATMOSPHERIC_EXPLOSION_HAZARD',
-      weight: `${Math.round(gasScore)}/35 pts`,
-      confidence: '98.4%',
-      text: `Methane (CH4) at ${maxCH4.toFixed(2)}% LEL exceeds MSHA/DGMS statutory safe limits (1.0% LEL). Rapid diffusion model indicates explosive pocket near Face 4B heading.`
+      weight: `${gasScore}/35 pts`,
+      confidence: `${nnResult.confidence}%`,
+      text: `Methane (CH4) at ${maxCH4.toFixed(2)}% LEL exceeds DGMS/MSHA statutory threshold (0.75% LEL). Neural classifier triggered explosive atmosphere alert.`
     });
   }
 
-  if (maxWater > 20) {
+  if (maxWater > 15) {
     explanations.push({
       factor: 'HYDROLOGICAL_INUNDATION',
-      weight: `${Math.round(floodScore)}/25 pts`,
-      confidence: '96.2%',
-      text: `Drainage sump water level at ${Math.round(maxWater)}cm with inflow rate of ${(hazards.floodWater.inundationRateCmMin || 4).toFixed(1)} cm/min. Sub-level 2 haulage drift clearance threatened within 18 minutes.`
+      weight: `${floodScore}/25 pts`,
+      confidence: '97.4%',
+      text: `Subterranean drainage sump water level at ${Math.round(maxWater)}cm. Deep decline haulage routes flagged with inundation barrier.`
     });
   }
 
-  if (sosCount > 0) {
-    const sosMiner = workers.find(w => w.status === 'SOS' || w.sosActive);
+  if (sosCount > 0 || trappedCount > 0) {
+    const trappedMiner = workers.find(w => w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive);
     explanations.push({
-      factor: 'MINER_SOS_BEACON_ACTIVE',
-      weight: `${Math.round(workerScore)}/15 pts`,
+      factor: 'MINER_TRAPPED_IN_ACCIDENT',
+      weight: `${workerScore}/15 pts`,
       confidence: '99.9%',
-      text: `Emergency SOS beacon broadcast from ${sosMiner ? sosMiner.name : 'Miner'} (${sosMiner ? sosMiner.id : 'W-03'}) at Sub-level 3. Elevated heart rate (${sosMiner ? sosMiner.hr : 130} BPM) indicates severe physical distress / entrapment.`
-    });
-  }
-
-  if (offlineNodes > 0) {
-    explanations.push({
-      factor: 'LORA_MESH_TOPOLOGY_DEGRADATION',
-      weight: `${Math.round(commScore)}/10 pts`,
-      confidence: '94.0%',
-      text: `${offlineNodes} Sentinel node(s) unreachable. LoRa mesh autonomous healing active; routing delay increased by +18ms.`
+      text: `Personnel ${trappedMiner ? trappedMiner.name : 'Miner'} (${trappedMiner ? trappedMiner.id : 'W-07'}) is trapped in place at ${trappedMiner ? trappedMiner.level.toUpperCase() : 'deep horizon'}. Standing still in position; RED rescue team route active and GREEN evacuation route illuminated.`
     });
   }
 
@@ -94,23 +100,24 @@ export function calculateAIRisk() {
 
   // Predictive 15-minute Trend Model
   const trendHistory = [];
-  const now = state.simTime;
   for (let i = 0; i <= 6; i++) {
     const minute = i * 2.5;
-    const mitigatedVal = Math.max(10, Math.round(totalScore - (totalScore > 30 ? i * 9 : 0)));
-    const unmitigatedVal = Math.min(100, Math.round(totalScore + (totalScore > 30 ? i * 8 : 0)));
+    const mitigatedVal = Math.max(10, Math.round(compositeScore - (compositeScore > 30 ? i * 9 : 0)));
+    const unmitigatedVal = Math.min(100, Math.round(compositeScore + (compositeScore > 30 ? i * 8 : 0)));
     trendHistory.push({ minute, mitigatedVal, unmitigatedVal });
   }
 
   return {
-    score: totalScore,
+    score: compositeScore,
     category,
+    confidence: nnResult.confidence,
+    neuralNetwork: nnResult,
     breakdown: {
-      gas: Math.round(gasScore),
-      flood: Math.round(floodScore),
-      seismic: Math.round(seismicScore),
-      worker: Math.round(workerScore),
-      comm: Math.round(commScore)
+      gas: gasScore,
+      flood: floodScore,
+      seismic: seismicScore,
+      worker: workerScore,
+      comm: commScore
     },
     explanations,
     predictiveTrend: trendHistory

@@ -1,6 +1,7 @@
 /**
- * NEXUS Master Application Orchestrator (Light Theme & Persistent Map)
+ * NEXUS Master Application Orchestrator
  * Industrial Mission Control Platform
+ * 6 Subterranean Levels | 16 Indian Miners | 14 Sentinel Nodes | Dual Spider Robotics
  */
 
 import { createIcons, icons } from 'lucide';
@@ -12,9 +13,7 @@ import { DigitalTwin3D } from './components/DigitalTwin3D.js';
 import { WorkerModule } from './components/WorkerModule.js';
 import { SensorModule } from './components/SensorModule.js';
 import { RobotModule } from './components/RobotModule.js';
-import { AIRiskModule } from './components/AIRiskModule.js';
 import { RoutePlannerModule } from './components/RoutePlannerModule.js';
-import { CommNetworkModule } from './components/CommNetworkModule.js';
 import { AlertsMissionModule } from './components/AlertsMissionModule.js';
 import { PresentationTour } from './components/PresentationTour.js';
 
@@ -73,13 +72,13 @@ class NexusApp {
       };
     });
 
-    // Scenario Dock Action Buttons
+    // Scenario Dock Action Buttons (Dynamic Cycling)
     const bindBtn = (id, fn) => {
       const el = document.getElementById(id);
-      if (el) el.onclick = () => { 
-        fn(); 
-        this.refreshDeckContent(); 
-        soundEngine.playClick(); 
+      if (el) el.onclick = () => {
+        fn();
+        this.refreshDeckContent();
+        soundEngine.playClick();
       };
     };
 
@@ -87,7 +86,6 @@ class NexusApp {
     bindBtn('btnIncreaseGas', () => simEngine.triggerGasLeak());
     bindBtn('btnTriggerFlood', () => simEngine.triggerFlood());
     bindBtn('btnRobotFail', () => simEngine.triggerRobotFailure());
-    bindBtn('btnNodeFail', () => simEngine.triggerNodeFailure());
     bindBtn('btnRestoreSystem', () => simEngine.restoreSystem());
 
     const btnPause = document.getElementById('btnPauseSim');
@@ -184,29 +182,23 @@ class NexusApp {
     // 1. Overview Deck View
     this.renderOverviewDeck();
 
-    // 2. Workers Deck
+    // 2. Workers Deck (16 Indian Miners)
     this.components.workers = new WorkerModule('deckWorkers', (workerId) => {
       this.components.map2D?.render();
     });
 
-    // 3. Sensors Deck
+    // 3. Sensors Deck (14 Distributed Nodes)
     this.components.sensors = new SensorModule('deckSensors');
 
-    // 4. Robots Deck
+    // 4. Robots Deck (Dual Hexapod Spiders)
     this.components.robots = new RobotModule('deckRobots');
 
-    // 5. AI Risk Deck
-    this.components.aiRisk = new AIRiskModule('deckAIRisk');
-
-    // 6. Routes Deck
+    // 5. Routes Deck (RED Rescue & GREEN Evac)
     this.components.routes = new RoutePlannerModule('deckRoutes', () => {
       this.components.map2D?.render();
     });
 
-    // 7. Mesh Deck
-    this.components.mesh = new CommNetworkModule('deckMesh');
-
-    // 8. Alerts Deck
+    // 6. Alerts Deck
     this.components.alerts = new AlertsMissionModule('deckAlerts', () => this.openDebriefModal());
   }
 
@@ -215,17 +207,17 @@ class NexusApp {
     if (!view) return;
 
     const risk = state.aiRiskData || { score: state.overallRisk, category: state.riskCategory };
-    const sosMiner = state.workers.find(w => w.status === 'SOS' || w.sosActive);
     const r01 = state.robots.r01;
     const r02 = state.robots.r02;
+    const trappedMiners = state.workers.filter(w => w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive);
 
     view.innerHTML = `
-      <!-- Hero KPI & Risk Meter -->
+      <!-- Hero KPI & Neural Network Risk Meter -->
       <div class="nexus-card" style="border-color: ${risk.category === 'CRITICAL' ? 'var(--red-crit)' : (risk.category === 'WARNING' ? 'var(--amber-warn)' : 'var(--border-subtle)')};">
         <div class="card-header">
           <div class="card-title-group">
             <i data-lucide="shield-alert" style="color: var(--blue-primary);"></i>
-            <span class="card-title">MISSION CONTROL STATUS & AI RISK</span>
+            <span class="card-title">MISSION STATUS & NEURAL NETWORK RISK (4-EPOCH MODEL)</span>
           </div>
           <span class="nav-badge" style="background: ${risk.category === 'CRITICAL' ? 'var(--red-tint)' : (risk.category === 'WARNING' ? 'var(--amber-warn)' : 'var(--green-tint)')}; color: ${risk.category === 'CRITICAL' ? 'var(--red-crit)' : (risk.category === 'WARNING' ? '#ffffff' : 'var(--green-safe)')}; font-weight: 800; font-size: 10px;">
             ${risk.category}
@@ -237,41 +229,43 @@ class NexusApp {
             <span style="font-size: 13px; color: var(--text-muted); font-weight: 700;">/ 100 Risk</span>
           </div>
           <div style="display: flex; gap: 6px;">
-            <button class="btn-scenario btn-restore" id="btnDeckInspectXAI" style="font-size: 11px; padding: 4px 10px;">
-              <i data-lucide="brain-circuit"></i>
-              <span>Causal XAI</span>
-            </button>
-            <button class="btn-scenario btn-primary-glow" id="btnDeckViewRoutes" style="font-size: 11px; padding: 4px 10px;">
+            <button class="btn-scenario btn-danger-action" id="btnDeckViewRoutes" style="font-size: 11px; padding: 4px 10px;">
               <i data-lucide="navigation"></i>
-              <span>Rescue Routes</span>
+              <span>Rescue Navigation</span>
+            </button>
+            <button class="btn-scenario btn-restore" id="btnDeckViewWorkers" style="font-size: 11px; padding: 4px 10px;">
+              <i data-lucide="users"></i>
+              <span>Miners (16)</span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Personnel Vitals Quick Grid -->
+      <!-- Personnel Quick Grid (16 Indian Miners) -->
       <div class="nexus-card">
         <div class="card-header">
           <div class="card-title-group">
             <i data-lucide="users" style="color: var(--green-safe);"></i>
-            <span class="card-title">PERSONNEL BIO-TAG STATUS</span>
+            <span class="card-title">PERSONNEL BIO-TAG STATUS (16 MINERS ACROSS 6 LEVELS)</span>
           </div>
-          <button class="btn-scenario btn-restore" id="btnDeckViewWorkers" style="font-size: 10px; padding: 2px 8px;">View All (6)</button>
+          <span class="nav-badge" style="background: ${trappedMiners.length > 0 ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${trappedMiners.length > 0 ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">
+            ${trappedMiners.length > 0 ? `${trappedMiners.length} TRAPPED (STAND STILL)` : '16 NOMINAL'}
+          </span>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-family: var(--font-mono); font-size: 10px;">
-          ${state.workers.slice(0, 6).map(w => {
-            const isSos = w.status === 'SOS' || w.sosActive;
-            return `
-              <div style="background: ${isSos ? 'var(--red-tint)' : 'var(--bg-secondary)'}; border: 1px solid ${isSos ? 'var(--red-crit)' : 'var(--border-subtle)'}; padding: 6px; border-radius: var(--radius-xs); display: flex; flex-direction: column; gap: 2px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-family: var(--font-mono); font-size: 9.5px;">
+          ${state.workers.map(w => {
+      const isTrapped = w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive;
+      return `
+              <div style="background: ${isTrapped ? 'var(--red-tint)' : 'var(--bg-secondary)'}; border: 1px solid ${isTrapped ? 'var(--red-crit)' : 'var(--border-subtle)'}; padding: 6px; border-radius: var(--radius-xs); display: flex; flex-direction: column; gap: 2px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-weight: 800; color: ${isSos ? 'var(--red-crit)' : 'var(--text-highlight)'};">${w.id}</span>
-                  <span style="font-size: 8.5px; font-weight: 800; color: ${isSos ? 'var(--red-crit)' : 'var(--green-safe)'};">${w.status}</span>
+                  <span style="font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : 'var(--text-highlight)'}; font-size: 10px;">${w.id}</span>
+                  <span style="font-size: 8px; font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : 'var(--green-safe)'};">${isTrapped ? 'TRAPPED' : 'OK'}</span>
                 </div>
-                <div style="font-size: 9px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.name.split(' ')[0]}</div>
-                <div style="font-weight: 800; color: ${isSos ? 'var(--red-crit)' : 'var(--blue-primary)'}; font-size: 10px;">${w.hr} BPM</div>
+                <div style="font-size: 9px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.name}</div>
+                <div style="font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : 'var(--blue-primary)'}; font-size: 9.5px;">${w.hr} BPM (${w.level.toUpperCase()})</div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </div>
 
@@ -280,7 +274,7 @@ class NexusApp {
         <div class="card-header">
           <div class="card-title-group">
             <i data-lucide="bot" style="color: var(--purple-bright);"></i>
-            <span class="card-title">ROBOTICS FLEET & SLAM</span>
+            <span class="card-title">DUAL SPIDY ROBOTICS & SLAM RECONNAISSANCE</span>
           </div>
           <button class="btn-scenario btn-robot-action" id="btnDeckViewRobots" style="font-size: 10px; padding: 2px 8px;">Command Fleet</button>
         </div>
@@ -288,7 +282,7 @@ class NexusApp {
           <!-- R01 Spider -->
           <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 8px 10px; border-radius: var(--radius-xs);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-weight: 800; color: var(--purple-ai);">🕷️ R-01 ARACHNE (SPIDER)</span>
+              <span style="font-weight: 800; color: var(--purple-ai);">🕷️ R-01 ARACHNE (SPIDER SCOUT)</span>
               <span class="nav-badge" style="background: ${r01.isFailed ? 'var(--red-tint)' : 'var(--purple-tint)'}; color: ${r01.isFailed ? 'var(--red-crit)' : 'var(--purple-bright)'}; font-size: 9px;">${r01.status}</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">
@@ -312,7 +306,7 @@ class NexusApp {
       </div>
 
       <!-- Real-Time Recent Incident Alerts -->
-      <div class="nexus-card" style="flex: 1; min-height: 160px;">
+      <div class="nexus-card" style="flex: 1; min-height: 140px;">
         <div class="card-header">
           <div class="card-title-group">
             <i data-lucide="bell" style="color: var(--red-crit);"></i>
@@ -335,9 +329,6 @@ class NexusApp {
       </div>
     `;
 
-    const btnInspect = view.querySelector('#btnDeckInspectXAI');
-    if (btnInspect) btnInspect.onclick = () => this.switchDeckTab('airisk');
-
     const btnRoutes = view.querySelector('#btnDeckViewRoutes');
     if (btnRoutes) btnRoutes.onclick = () => this.switchDeckTab('routes');
 
@@ -353,9 +344,7 @@ class NexusApp {
     else if (this.activeDeck === 'workers') this.components.workers?.render();
     else if (this.activeDeck === 'sensors') this.components.sensors?.render();
     else if (this.activeDeck === 'robots') this.components.robots?.render();
-    else if (this.activeDeck === 'airisk') this.components.aiRisk?.render();
     else if (this.activeDeck === 'routes') this.components.routes?.render();
-    else if (this.activeDeck === 'mesh') this.components.mesh?.render();
     else if (this.activeDeck === 'alerts') this.components.alerts?.render();
   }
 
@@ -411,10 +400,10 @@ class NexusApp {
     // 4. Badges
     const workerBadge = document.getElementById('tabWorkerBadge');
     if (workerBadge) {
-      const sosCount = s.workers.filter(w => w.status === 'SOS' || w.sosActive).length;
-      workerBadge.textContent = sosCount > 0 ? `${sosCount} SOS!` : '6 OK';
-      workerBadge.style.background = sosCount > 0 ? 'var(--red-tint)' : 'var(--blue-tint)';
-      workerBadge.style.color = sosCount > 0 ? 'var(--red-crit)' : 'var(--blue-primary)';
+      const trappedCount = s.workers.filter(w => w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive).length;
+      workerBadge.textContent = trappedCount > 0 ? `${trappedCount} TRAPPED!` : '16 OK';
+      workerBadge.style.background = trappedCount > 0 ? 'var(--red-tint)' : 'var(--blue-tint)';
+      workerBadge.style.color = trappedCount > 0 ? 'var(--red-crit)' : 'var(--blue-primary)';
     }
 
     const alertBadge = document.getElementById('tabAlertBadge');
@@ -492,15 +481,13 @@ class NexusApp {
     title.textContent = `${type.toUpperCase()} TELEMETRY INSPECTOR: ${data.id || data.name}`;
 
     if (type === 'worker') {
-      const isSos = data.status === 'SOS' || data.sosActive;
+      const isTrapped = data.status === 'TRAPPED' || data.status === 'SOS' || data.sosActive;
       const rescue = state.rescueTeamRoute || {
         origin: 'Surface Portal A (0m)',
         destination: `${data.name} (${data.level.toUpperCase()})`,
-        distanceM: data.level === 'l3' ? 480 : (data.level === 'l2' ? 320 : 180),
-        estArrivalTimeMin: data.level === 'l3' ? 5.8 : (data.level === 'l2' ? 3.9 : 2.2),
-        pathNodes: data.level === 'l3' 
-          ? ['Surface Portal A (0m)', 'Shaft 1 Collar (0m)', 'Shaft L1 Station (-120m)', 'Shaft L2 Station (-240m)', 'Deep Station L3 (-380m)', 'Refuge Chamber Bypass', `Worker Location (${data.nodeId || 'Face 4B'})`]
-          : ['Surface Portal A (0m)', 'Shaft 1 Collar (0m)', `Shaft Station (${data.level.toUpperCase()})`, `Worker Location (${data.nodeId})`]
+        distanceM: 480,
+        estArrivalTimeMin: 5.8,
+        pathNodes: ['Surface Portal A (0m)', 'Shaft 1 Collar (0m)', `Shaft Station (${data.level.toUpperCase()})`, `Worker Location (${data.nodeId || 'Heading'})`]
       };
 
       body.innerHTML = `
@@ -509,182 +496,78 @@ class NexusApp {
           <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
             <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
               <span style="font-size: 13px; font-weight: 800; color: var(--text-highlight);">${data.name} (${data.role})</span>
-              <span class="nav-badge" style="background: ${isSos ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${isSos ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">
-                ${isSos ? '🚨 EMERGENCY SOS' : data.status}
+              <span class="nav-badge" style="background: ${isTrapped ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${isTrapped ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">
+                ${isTrapped ? '🚨 TRAPPED (STAND STILL)' : data.status}
               </span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 10px;">
               <div><strong>Depth:</strong> ${data.z}m (${data.level.toUpperCase()})</div>
               <div><strong>Heart Rate:</strong> <span style="color: ${data.hr > 120 ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">${data.hr} BPM</span></div>
               <div><strong>SpO2:</strong> ${data.spO2}%</div>
-              <div><strong>Motion:</strong> ${data.motion}</div>
+              <div><strong>Motion:</strong> ${isTrapped ? 'STAND STILL' : data.motion}</div>
               <div><strong>ESP32 LoRa RSSI:</strong> ${data.rssi} dBm</div>
               <div><strong>Tag Battery:</strong> ${data.battery}%</div>
             </div>
           </div>
 
-          <!-- Environmental Sensed Surroundings & Statutory Safe Limits -->
-          <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
-            <div style="font-family: var(--font-display); font-size: 11.5px; font-weight: 800; color: var(--blue-primary); margin-bottom: 6px;">
-              LOCAL DRIFT ENVIRONMENT & STATUTORY SAFE BENCHMARKS
-            </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 9.5px; text-align: left;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
-                  <th style="padding: 3px 0;">PARAMETER</th>
-                  <th>STATUTORY SAFE LIMIT</th>
-                  <th>CURRENT LEVEL</th>
-                  <th>SAFETY STATUS</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 4px 0;"><strong>Methane (CH4)</strong></td>
-                  <td>&lt; 0.75% LEL</td>
-                  <td style="font-weight: 800; color: ${isSos ? 'var(--red-crit)' : 'var(--green-safe)'};">${isSos ? '2.48% LEL' : '0.12% LEL'}</td>
-                  <td><span class="nav-badge" style="background: ${isSos ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${isSos ? 'var(--red-crit)' : 'var(--green-safe)'};">${isSos ? 'EXPLOSION HAZARD' : 'SAFE'}</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 4px 0;"><strong>Oxygen (O2)</strong></td>
-                  <td>19.5% - 23.5%</td>
-                  <td style="font-weight: 800; color: var(--green-safe);">${isSos ? '19.8%' : '20.8%'}</td>
-                  <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">SAFE</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 4px 0;"><strong>Carbon Monoxide (CO)</strong></td>
-                  <td>&lt; 25 ppm</td>
-                  <td style="font-weight: 800; color: ${isSos ? 'var(--amber-warn)' : 'var(--text-highlight)'};">${isSos ? '42 ppm' : '6 ppm'}</td>
-                  <td><span class="nav-badge" style="background: ${isSos ? 'var(--amber-tint)' : 'var(--green-tint)'}; color: ${isSos ? 'var(--amber-warn)' : 'var(--green-safe)'};">${isSos ? 'ELEVATED' : 'SAFE'}</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 4px 0;"><strong>Temperature</strong></td>
-                  <td>&lt; 32.0°C</td>
-                  <td style="font-weight: 800;">28.5°C</td>
-                  <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">SAFE</span></td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 0;"><strong>Flood Water Inundation</strong></td>
-                  <td>&lt; 15 cm</td>
-                  <td style="font-weight: 800;">4 cm</td>
-                  <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">SAFE</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Dedicated Surface Rescue Team Ingress Path -->
-          <div style="background: var(--blue-tint); border: 1.5px solid var(--blue-water); padding: 10px; border-radius: var(--radius-xs);">
+          <!-- Dedicated RED Rescue Ingress Path -->
+          <div style="background: var(--red-tint); border: 1.5px solid #ef4444; padding: 10px; border-radius: var(--radius-xs);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: var(--blue-water);">
-                🚑 SURFACE RESCUE TEAM RAPID INGRESS PATH
+              <span style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: #dc2626;">
+                🔴 FIRST-RESPONDER RAPID INGRESS ROUTE (RED PATH)
               </span>
-              <span class="nav-badge" style="background: var(--blue-water); color: #ffffff; font-weight: 800;">
+              <span class="nav-badge" style="background: #dc2626; color: #ffffff; font-weight: 800;">
                 EST ARRIVAL: ${rescue.estArrivalTimeMin} MIN (${rescue.distanceM}m)
               </span>
             </div>
 
             <div style="font-size: 10.5px; color: var(--text-primary); margin-bottom: 6px;">
-              <strong>Step-by-Step Entry Trajectory:</strong>
+              <strong>Trajectory:</strong>
               <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
                 ${(rescue.pathNodes || []).map((node, i) => `
-                  <span style="background: #ffffff; border: 1px solid var(--border-subtle); padding: 3px 6px; border-radius: var(--radius-xs); font-weight: 700; color: var(--text-highlight);">
-                    ${i + 1}. ${node} ${i < rescue.pathNodes.length - 1 ? '➔' : '🎯'}
+                  <span style="background: #ffffff; border: 1px solid var(--border-subtle); padding: 3px 6px; border-radius: var(--radius-xs); font-weight: 700; font-size: 10px; color: var(--text-highlight);">
+                    ${i + 1}. ${node} ${i < rescue.pathNodes.length - 1 ? '➔' : '🎯 (VICTIM REACHED)'}
                   </span>
                 `).join('')}
               </div>
             </div>
-
-            <div style="font-size: 10px; color: #1e3a8a; line-height: 1.35;">
-              <strong>Mandatory Rescue PPE:</strong> SCBA 60-min Positive Pressure, FLIR Thermal Imager (Zone 0), Hydraulic Extrication Shears, Multi-Gas Sniffer.
-            </div>
           </div>
 
-          <!-- Worker Egress Evacuation Route -->
+          <!-- GREEN Worker Safe Evacuation Route -->
           <div style="background: var(--green-tint); border: 1px solid var(--green-safe); padding: 8px 10px; border-radius: var(--radius-xs); color: #065f46; font-size: 10.5px;">
-            <strong>Worker Evacuation Path (Egress):</strong> ${data.name} ➔ Refuge Chamber (-380m) ➔ Shaft 1 Hoist Express Ascent ➔ Surface Portal A (0m Fresh Air Base).
+            <strong>🟢 Safe Evacuation Path (GREEN ROUTE):</strong> ${data.name} ➔ Nearest Refuge Chamber ➔ Express Vertical Hoist ➔ Surface Portal A (Fresh Air Base).
           </div>
         </div>
       `;
     } else if (type === 'sensor') {
-      const isCritical = data.ch4 > 1.25 || data.co > 50 || data.waterLevel > 30;
-      const isWarn = data.ch4 > 0.75 || data.co > 25 || data.waterLevel > 15;
-
       body.innerHTML = `
         <div style="font-family: var(--font-mono); font-size: 11.5px; display: flex; flex-direction: column; gap: 10px;">
           <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <span style="font-size: 13px; font-weight: 800; color: var(--text-highlight);">${data.id}: ${data.name}</span>
-              <span class="nav-badge" style="background: ${isCritical ? 'var(--red-tint)' : (isWarn ? 'var(--amber-warn)' : 'var(--green-tint)')}; color: ${isCritical ? 'var(--red-crit)' : (isWarn ? '#ffffff' : 'var(--green-safe)')}; font-weight: 800;">
+              <span class="nav-badge" style="background: ${data.status === 'CRITICAL' ? 'var(--red-tint)' : (data.status === 'WARNING' ? 'var(--amber-warn)' : 'var(--green-tint)')}; color: ${data.status === 'CRITICAL' ? 'var(--red-crit)' : (data.status === 'WARNING' ? '#ffffff' : 'var(--green-safe)')}; font-weight: 800;">
                 ${data.status}
               </span>
             </div>
             <div style="font-size: 10.5px; color: var(--text-muted);">Location: ${data.location} | Subterranean Level: ${data.level.toUpperCase()} | LoRa Mesh Hops: ${data.meshHops}</div>
           </div>
 
-          <!-- Sensed Telemetry vs Statutory Safe Benchmarks Table -->
           <div style="background: #ffffff; border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
             <div style="font-family: var(--font-display); font-size: 11.5px; font-weight: 800; color: var(--blue-primary); margin-bottom: 6px;">
               SENSED ENVIRONMENTAL MEASUREMENTS & STATUTORY BENCHMARKS
             </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: left;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
-                  <th style="padding: 3px 0;">MEASURED PARAMETER</th>
-                  <th>STATUTORY SAFE BENCHMARK</th>
-                  <th>LIVE SENSED VALUE</th>
-                  <th>SAFETY RATING</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 5px 0;"><strong>Methane (CH4)</strong></td>
-                  <td>&lt; 0.75% LEL (Statutory Limit)</td>
-                  <td style="font-weight: 800; color: ${data.ch4 > 1.25 ? 'var(--red-crit)' : (data.ch4 > 0.75 ? 'var(--amber-warn)' : 'var(--green-safe)')};">${data.ch4}% LEL</td>
-                  <td><span class="nav-badge" style="background: ${data.ch4 > 1.25 ? 'var(--red-tint)' : (data.ch4 > 0.75 ? 'var(--amber-tint)' : 'var(--green-tint)')}; color: ${data.ch4 > 1.25 ? 'var(--red-crit)' : (data.ch4 > 0.75 ? 'var(--amber-warn)' : 'var(--green-safe)')};">${data.ch4 > 1.25 ? 'EXPLOSIVE' : (data.ch4 > 0.75 ? 'WARNING' : 'SAFE')}</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 5px 0;"><strong>Oxygen (O2)</strong></td>
-                  <td>19.5% - 23.5% (Safe Envelope)</td>
-                  <td style="font-weight: 800; color: ${data.o2 < 19.5 ? 'var(--red-crit)' : 'var(--green-safe)'};">${data.o2}%</td>
-                  <td><span class="nav-badge" style="background: ${data.o2 < 19.5 ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${data.o2 < 19.5 ? 'var(--red-crit)' : 'var(--green-safe)'};">${data.o2 < 19.5 ? 'DEFICIENT' : 'SAFE'}</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 5px 0;"><strong>Carbon Monoxide (CO)</strong></td>
-                  <td>&lt; 25 ppm (Toxic Threshold)</td>
-                  <td style="font-weight: 800; color: ${data.co > 50 ? 'var(--red-crit)' : (data.co > 25 ? 'var(--amber-warn)' : 'var(--text-highlight)')};">${data.co} ppm</td>
-                  <td><span class="nav-badge" style="background: ${data.co > 50 ? 'var(--red-tint)' : (data.co > 25 ? 'var(--amber-tint)' : 'var(--green-tint)')}; color: ${data.co > 50 ? 'var(--red-crit)' : (data.co > 25 ? 'var(--amber-warn)' : 'var(--green-safe)')};">${data.co > 50 ? 'DANGER' : (data.co > 25 ? 'ELEVATED' : 'SAFE')}</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 5px 0;"><strong>Ambient Temperature</strong></td>
-                  <td>&lt; 32.0°C (Thermal Comfort)</td>
-                  <td style="font-weight: 800;">${data.temp}°C</td>
-                  <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">SAFE</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 5px 0;"><strong>Relative Humidity</strong></td>
-                  <td>40% - 70%</td>
-                  <td style="font-weight: 800;">${data.humidity}%</td>
-                  <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">SAFE</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 5px 0;"><strong>Water Inundation Level</strong></td>
-                  <td>&lt; 15 cm</td>
-                  <td style="font-weight: 800; color: ${data.waterLevel > 15 ? 'var(--blue-water)' : 'var(--text-highlight)'};">${data.waterLevel} cm</td>
-                  <td><span class="nav-badge" style="background: ${data.waterLevel > 15 ? 'var(--blue-water-tint)' : 'var(--green-tint)'}; color: ${data.waterLevel > 15 ? 'var(--blue-water)' : 'var(--green-safe)'};">${data.waterLevel > 30 ? 'FLOOD DANGER' : (data.waterLevel > 15 ? 'CAUTION' : 'SAFE')}</span></td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0;"><strong>Seismic Roof Vibration</strong></td>
-                  <td>&lt; 0.30 mm/s</td>
-                  <td style="font-weight: 800;">${data.vibration} mm/s</td>
-                  <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">SAFE</span></td>
-                </tr>
-              </tbody>
-            </table>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 10.5px;">
+              <div>CH4: <strong>${data.ch4}% LEL</strong> (Limit: &lt; 0.75%)</div>
+              <div>CO: <strong>${data.co} ppm</strong> (Limit: &lt; 25 ppm)</div>
+              <div>O2: <strong>${data.o2}%</strong> (Safe: 19.5-23.5%)</div>
+              <div>Temp: <strong>${data.temp}°C</strong> | Humidity: <strong>${data.humidity}%</strong></div>
+              <div>Water: <strong>${data.waterLevel} cm</strong> (Limit: &lt; 15 cm)</div>
+              <div>Vibration: <strong>${data.vibration} mm/s</strong></div>
+            </div>
           </div>
         </div>
       `;
     } else if (type === 'robot') {
-      const recon = state.reconReport;
       body.innerHTML = `
         <div style="font-family: var(--font-mono); font-size: 11.5px; display: flex; flex-direction: column; gap: 10px;">
           <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
@@ -693,20 +576,6 @@ class NexusApp {
               <span class="nav-badge" style="background: var(--purple-tint); color: var(--purple-bright); font-weight: 800;">${data.status}</span>
             </div>
             <div style="font-size: 10.5px; color: var(--text-muted);">${data.role} | SLAM Coverage: ${data.mappedCoverage}% | Battery: ${data.battery}%</div>
-          </div>
-
-          <!-- Autonomous Reconnaissance Report -->
-          <div style="background: #ffffff; border: 1.5px solid var(--purple-bright); padding: 10px; border-radius: var(--radius-xs);">
-            <div style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: var(--purple-ai); margin-bottom: 6px;">
-              🕷️ AUTONOMOUS SPIDY SLAM RECONNAISSANCE REPORT
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 10.5px;">
-              <div><strong>Target Incident Node:</strong> ${recon.incidentName}</div>
-              <div><strong>Environmental Sweep:</strong> CH4: <span style="font-weight: 800; color: ${recon.ch4 > 1.25 ? 'var(--red-crit)' : 'var(--green-safe)'};">${recon.ch4}% LEL (Safe: &lt; 0.75%)</span> | Temp: ${recon.temp}°C | Humidity: ${recon.humidity}%</div>
-              <div><strong>Thermal Human Verification:</strong> <span style="font-weight: 800; color: ${recon.humanDetected ? 'var(--green-safe)' : 'var(--text-muted)'};">${recon.humanDetected ? `✓ ${recon.humanName} (${recon.humanStatus})` : 'Clear'}</span></div>
-              <div><strong>First-Responder Human Rescue Feasibility:</strong> <span style="font-weight: 800; color: ${recon.rescueTeamAllowed ? 'var(--green-safe)' : 'var(--red-crit)'};">${recon.rescueTeamAllowed ? 'SAFE FOR INGRESS' : 'SCBA 60-MIN MANDATORY'}</span></div>
-              <div><strong>Alternate Evacuation Route Transmitted:</strong> <span style="color: var(--blue-primary); font-weight: 800;">${recon.alternatePathName}</span></div>
-            </div>
           </div>
         </div>
       `;
@@ -723,7 +592,7 @@ class NexusApp {
 
     const rescue = state.rescueTeamRoute || {
       origin: 'Surface Rescue Staging (Portal A 0m)',
-      destination: 'Trapped Worker Rajesh Kumar (Face 4B -380m)',
+      destination: 'Trapped Worker (Face 4B -380m)',
       distanceM: 480,
       estArrivalTimeMin: 5.8,
       pathNodes: ['Surface Portal A (0m)', 'Shaft 1 Collar (0m)', 'Shaft Station L1 (-120m)', 'Shaft Station L2 (-240m)', 'Deep Station L3 (-380m)', 'Refuge Chamber Bypass', 'Extraction Face 4B (-380m)']
@@ -731,20 +600,18 @@ class NexusApp {
 
     body.innerHTML = `
       <div style="font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; display: flex; flex-direction: column; gap: 10px;">
-        <!-- Executive Mission Summary -->
         <div style="background: var(--blue-tint); border-left: 3.5px solid var(--blue-primary); padding: 8px 12px; border-radius: 0 var(--radius-xs) var(--radius-xs) 0;">
-          <strong>INCIDENT IDENTIFIER:</strong> NEXUS-SUBTERRANEAN-RESCUE-04B<br>
-          <strong>LOCATION:</strong> Bharat Block-IV Coal Heading (-380m Depth)<br>
+          <strong>INCIDENT IDENTIFIER:</strong> NEXUS-SUBTERRANEAN-RESCUE-BHARAT-IV<br>
+          <strong>LOCATION:</strong> Bharat Block-IV 6-Level Complex (-680m Depth)<br>
           <strong>MISSION OUTCOME:</strong> <span style="color: var(--green-safe); font-weight: 800;">100% SUCCESSFUL PERSONNEL EXTRICTION</span>
         </div>
 
-        <!-- Dedicated Surface Rescue Team Ingress Path & PPE Table -->
-        <div style="background: #ffffff; border: 1.5px solid var(--blue-water); padding: 10px; border-radius: var(--radius-xs);">
+        <div style="background: #ffffff; border: 1.5px solid #ef4444; padding: 10px; border-radius: var(--radius-xs);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span style="font-family: var(--font-display); font-size: 12.5px; font-weight: 800; color: var(--blue-water);">
-              🚑 FIRST-RESPONDER SURFACE RESCUE TEAM INGRESS TRAJECTORY
+            <span style="font-family: var(--font-display); font-size: 12.5px; font-weight: 800; color: #dc2626;">
+              🚑 FIRST-RESPONDER SURFACE RESCUE TEAM INGRESS TRAJECTORY (RED PATH)
             </span>
-            <span class="nav-badge" style="background: var(--blue-water-tint); color: var(--blue-water); font-weight: 800;">
+            <span class="nav-badge" style="background: var(--red-tint); color: var(--red-crit); font-weight: 800;">
               ARRIVAL TIME: ${rescue.estArrivalTimeMin} MIN (${rescue.distanceM}m)
             </span>
           </div>
@@ -759,84 +626,6 @@ class NexusApp {
               `).join('')}
             </div>
           </div>
-
-          <div style="font-size: 10px; color: #1e3a8a; line-height: 1.4;">
-            <strong>Mandatory First-Responder Equipment:</strong> SCBA 60-Minute Positive Pressure Unit, Intrinsically Safe FLIR Thermal Imager (Zone 0 Certified), Hydraulic Extrication Shears, Multi-Gas Atmospheric Sniffer.
-          </div>
-        </div>
-
-        <!-- Environmental Peak Telemetry vs Statutory Safe Limits Table -->
-        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
-          <div style="font-family: var(--font-display); font-size: 12px; font-weight: 800; color: var(--text-highlight); margin-bottom: 6px;">
-            ENVIRONMENTAL PEAK TELEMETRY VS STATUTORY SAFE BENCHMARKS
-          </div>
-          <table style="width: 100%; border-collapse: collapse; font-size: 9.5px; text-align: left;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
-                <th style="padding: 3px 0;">SENSED PARAMETER</th>
-                <th>STATUTORY SAFE LIMIT</th>
-                <th>PEAK RECORDED IN MINE</th>
-                <th>SAFETY COMPLIANCE STATUS</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 4px 0;"><strong>Methane (CH4)</strong></td>
-                <td>&lt; 0.75% LEL</td>
-                <td style="font-weight: 800; color: var(--red-crit);">2.48% LEL (Face 4B)</td>
-                <td><span class="nav-badge" style="background: var(--red-tint); color: var(--red-crit);">EXCEEDED (EVAC TRIGGERED)</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 4px 0;"><strong>Carbon Monoxide (CO)</strong></td>
-                <td>&lt; 25 ppm</td>
-                <td style="font-weight: 800; color: var(--amber-warn);">58 ppm</td>
-                <td><span class="nav-badge" style="background: var(--amber-tint); color: var(--amber-warn);">ELEVATED (SCBA ENFORCED)</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 4px 0;"><strong>Oxygen (O2)</strong></td>
-                <td>19.5% - 23.5%</td>
-                <td style="font-weight: 800; color: var(--green-safe);">19.8%</td>
-                <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">COMPLIANT</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 4px 0;"><strong>Drainage Sump Flood</strong></td>
-                <td>&lt; 15 cm</td>
-                <td style="font-weight: 800; color: var(--blue-water);">48 cm (L2 Sump)</td>
-                <td><span class="nav-badge" style="background: var(--blue-water-tint); color: var(--blue-water);">INUNDATION BLOCKED</span></td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 0;"><strong>Seismic Roof Strain</strong></td>
-                <td>&lt; 0.30 mm/s</td>
-                <td style="font-weight: 800;">0.65 mm/s</td>
-                <td><span class="nav-badge" style="background: var(--green-tint); color: var(--green-safe);">MONITORED</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Autonomous Robotics & LoRa Mesh Performance -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 8px; border-radius: var(--radius-xs);">
-            <strong>AUTONOMOUS ROBOTICS DEPLOYMENT:</strong><br>
-            • Spidy Scout R-01: 78.4% SLAM Coverage<br>
-            • R-01 Rockfall Jam Detected: Yes (00:02:14)<br>
-            • Spidy Standby R-02 Handover Latency: 1.0s<br>
-            • O2 Emergency Delivery: 2x 30-min cylinders
-          </div>
-          <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 8px; border-radius: var(--radius-xs);">
-            <strong>LORA MESH COMMUNICATIONS:</strong><br>
-            • Active Sentinels: 8/8 synchronized<br>
-            • Packet Delivery Ratio (PDR): 99.4%<br>
-            • Mesh Self-Healing Reroute: Completed in 0.8s<br>
-            • Bio-Tag Telemetry Frequency: 1.0 Hz Real-Time
-          </div>
-        </div>
-
-        <div style="background: var(--green-tint); border: 1px solid var(--green-safe); padding: 8px 12px; border-radius: var(--radius-xs); color: var(--text-highlight);">
-          <strong>REGULATORY & INDUSTRIAL SAFETY COMPLIANCE:</strong><br>
-          ✓ Statutory explosion limit alert triggered within 1.0s of CH4 spike.<br>
-          ✓ Wearable tags broadcast instant alternate evacuation routes to all endangered miners.<br>
-          ✓ Dynamic A* routing guided personnel safely to Surface Portal A avoiding toxic gas eddies.
         </div>
       </div>
     `;
@@ -846,8 +635,7 @@ class NexusApp {
   }
 }
 
-// Initialize Application on DOM Ready
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
   const app = new NexusApp();
   app.init();
 });
