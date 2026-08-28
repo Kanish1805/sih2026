@@ -26,9 +26,9 @@ export class PresentationTour {
       {
         id: 1,
         phase: 'sense',
-        title: 'Stage 1: SENSE & CONNECT – 6 Subterranean Levels & 16 Miners',
+        title: 'Stage 1: SENSE & CONNECT – 5 Subterranean Tunnels & 16 Miners',
         module: 'overview',
-        narrative: 'NEXUS maintains continuous telemetry across 16 moving Indian miners, 14 multi-gas sentinels, and Spidy Scout Robot R01 traversing across 6 subterranean levels down to -680m.',
+        narrative: 'NEXUS maintains continuous telemetry across 16 moving Indian miners, 13 multi-gas sentinels, and Spidy Scout Robot R01 traversing across 5 subterranean tunnels down to -580m.',
         keyPoint: 'Zero single point of failure: decentralized LoRa mesh self-organizes without surface internet.',
         action: () => {
           simEngine.restoreSystem();
@@ -38,9 +38,9 @@ export class PresentationTour {
       {
         id: 2,
         phase: 'understand',
-        title: 'Stage 2: UNDERSTAND – Multi-Node Hazard Cycling & Trapped Stay-In-Place',
+        title: 'Stage 2: UNDERSTAND – Danger Mode: RED & GREEN Routes Only',
         module: 'sensors',
-        narrative: 'Methane (CH4) spikes at a rotating extraction drift. Trapped miners stand still in place while wearable bio-tags broadcast the RED rescue path and GREEN safe escape route.',
+        narrative: 'Methane (CH4) spikes at a rotating extraction heading. In Danger Mode, only RED (Rescue Route) and GREEN (Safe Evacuation Route) are displayed, while BLACK is strictly hidden.',
         keyPoint: 'Neural network risk model evaluates real-time atmospheric toxicity and geotechnical stability.',
         action: () => {
           simEngine.triggerGasLeak();
@@ -50,10 +50,10 @@ export class PresentationTour {
       {
         id: 3,
         phase: 'predict',
-        title: 'Stage 3: PREDICT & PLAN – RED Rescue Ingress & GREEN Safe Evacuation',
+        title: 'Stage 3: PREDICT & PLAN – SOS Mode: BLACK Route & Autonomous Robot Dispatch',
         module: 'routes',
-        narrative: 'Miner triggers emergency SOS. NEXUS pathfinder simultaneously computes the RED First-Responder Surface Rescue Team Ingress Path and the GREEN Safe Evacuation Path.',
-        keyPoint: 'Dual-path trajectory ensures victims stay in place safely while rescue teams ingress with mandatory PPE guidance.',
+        narrative: 'Miner triggers emergency SOS. NEXUS immediately activates SOS Mode: RED and GREEN routes are hidden, and ONLY the BLACK route is displayed as the robot navigates to the worker.',
+        keyPoint: 'Strict State Priority ensures no mixed routes are displayed. Autonomous robot reaches victim and displays WORKER REACHED / ASSISTING WORKER.',
         action: () => {
           simEngine.triggerWorkerSOS();
           state.pipelinePhase = 'plan';

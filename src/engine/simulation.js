@@ -1,14 +1,17 @@
 /**
  * NEXUS Real-Time Simulation Engine & Multi-Agent Orchestrator
  * Features:
- * - Dynamic multi-node accident cycling across all 6 subterranean levels
+ * - Dynamic multi-node accident cycling across all 5 subterranean tunnels
  * - Trapped worker stand-in-place behavior during accidents
- * - Dual Route Management: Surface Rescue Team RED route towards worker & Worker GREEN evacuation route to safe nodal point
- * - Autonomous Spidy Robot Rapid Reconnaissance & SLAM Assessment
- * - Automated progressive rescue mission execution
+ * - Strict State Priority for Routes:
+ *     * DANGER: RED (Rescue) + GREEN (Evac) routes ONLY (BLACK hidden)
+ *     * SOS_ACTIVE: BLACK (Robot -> SOS Worker) route ONLY (RED + GREEN hidden)
+ *     * NORMAL: All routes hidden
+ * - Autonomous Robot Waypoint Traversal along BLACK route to SOS worker
+ * - "WORKER REACHED / ASSISTING WORKER" arrival event & dynamic health panel display
  */
 
-import { state, resetState, MINE_TOPOGRAPHY, HAZARD_LOCATIONS } from './state.js';
+import { state, resetState, MINE_TOPOGRAPHY, HAZARD_LOCATIONS, getRouteVisibilityState } from './state.js';
 import { calculateAIRisk } from './ai_risk_engine.js';
 import { pathfinder } from './pathfinder.js';
 import { soundEngine } from './sound_engine.js';
@@ -20,7 +23,6 @@ class SimulationEngine {
     this.lastTickTime = performance.now();
     this.telemetryAccumulator = 0;
     this.animationFrameId = null;
-    this.rescueTimer = null;
   }
 
   start() {
@@ -118,7 +120,7 @@ class SimulationEngine {
   }
 
   updateTelemetry() {
-    // 1. Natural sensor noise & history tracking across all 14 Sentinel nodes
+    // 1. Natural sensor noise & history tracking across all 13 Sentinel nodes
     state.sensors.forEach(s => {
       if (s.status !== 'OFFLINE') {
         s.temp = +(s.temp + (Math.random() - 0.5) * 0.05).toFixed(1);
@@ -155,15 +157,29 @@ class SimulationEngine {
       state.hazards.floodWater.sumpLevelCm = sumpSensor ? sumpSensor.waterLevel : 25;
     }
 
-    // 4. Worker Biometrics
+    // 4. Worker Biometrics Dynamic Updates
     state.workers.forEach(w => {
-      if (w.status === 'SOS' || w.status === 'TRAPPED' || w.sosActive) {
-        w.hr = Math.min(152, Math.max(132, w.hr + Math.floor((Math.random() - 0.45) * 3)));
-        w.spO2 = Math.max(89, w.spO2 - (Math.random() > 0.7 ? 1 : 0));
+      if (w.status === 'SOS' || w.sosActive) {
+        w.hr = Math.min(154, Math.max(130, w.hr + Math.floor((Math.random() - 0.45) * 3)));
+        w.spO2 = Math.max(88, w.spO2 - (Math.random() > 0.7 ? 1 : 0));
+        w.temp = +(37.2 + (Math.random() - 0.5) * 0.2).toFixed(1);
+      } else if (w.status === 'BEING_ASSISTED') {
+        // Stabilizing
+        w.hr = Math.max(76, w.hr - 2);
+        w.spO2 = Math.min(98, w.spO2 + 1);
+        w.temp = +(36.6 + (Math.random() - 0.5) * 0.1).toFixed(1);
+      } else if (w.status === 'TRAPPED' || w.status === 'DANGER') {
+        w.hr = Math.min(128, Math.max(110, w.hr + Math.floor((Math.random() - 0.45) * 2)));
+        w.spO2 = Math.max(93, w.spO2 - (Math.random() > 0.8 ? 1 : 0));
+        w.temp = +(36.9 + (Math.random() - 0.5) * 0.1).toFixed(1);
       } else if (w.tagWarning) {
-        w.hr = Math.min(115, Math.max(92, w.hr + Math.floor((Math.random() - 0.45) * 2)));
+        w.hr = Math.min(112, Math.max(90, w.hr + Math.floor((Math.random() - 0.45) * 2)));
+        w.spO2 = Math.min(99, Math.max(95, w.spO2));
+        w.temp = +(36.6 + (Math.random() - 0.5) * 0.1).toFixed(1);
       } else {
         w.hr = Math.min(82, Math.max(68, w.hr + Math.floor((Math.random() - 0.5) * 2)));
+        w.spO2 = Math.min(99, Math.max(97, w.spO2));
+        w.temp = +(36.5 + (Math.random() - 0.5) * 0.1).toFixed(1);
       }
     });
 
@@ -181,6 +197,40 @@ class SimulationEngine {
     const r01 = state.robots.r01;
     const r02 = state.robots.r02;
 
+    // --- SOS BLACK PATH WAYPOINT TRAVERSAL ---
+    if (state.sosBlackPath && state.sosBlackPath.active && !state.sosBlackPath.arrived) {
+      const assignedRobot = state.robots[state.sosBlackPath.assignedRobotId] || r01;
+      const waypoints = state.sosBlackPath.nodeWaypoints || [];
+      const currentIdx = state.sosBlackPath.currentWaypointIdx;
+
+      if (waypoints.length > 0 && currentIdx < waypoints.length) {
+        const targetWp = waypoints[currentIdx];
+        const dx = targetWp.x - assignedRobot.x;
+        const dy = targetWp.y - assignedRobot.y;
+        const dist = Math.hypot(dx, dy);
+
+        assignedRobot.status = 'SPRINTING_TO_INCIDENT';
+        assignedRobot.mappedCoverage = Math.min(100, +(assignedRobot.mappedCoverage + 0.1 * deltaSec).toFixed(1));
+
+        if (dist > 5) {
+          const speed = 85 * deltaSec;
+          assignedRobot.x += (dx / dist) * speed;
+          assignedRobot.y += (dy / dist) * speed;
+          assignedRobot.targetX = targetWp.x;
+          assignedRobot.targetY = targetWp.y;
+        } else {
+          // Advance to next waypoint
+          state.sosBlackPath.currentWaypointIdx++;
+          if (state.sosBlackPath.currentWaypointIdx >= waypoints.length) {
+            // Robot reached the SOS worker!
+            this.handleRobotArrivalAtSOSWorker(assignedRobot, state.sosBlackPath.targetWorkerId);
+          }
+        }
+      }
+      return;
+    }
+
+    // --- NORMAL / DANGER PATROL & SPRINT MOTIONS ---
     // R01 Spidy Scout Motion
     if (r01 && !r01.isFailed && r01.status !== 'OFFLINE') {
       r01.mappedCoverage = Math.min(100, +(r01.mappedCoverage + 0.05 * deltaSec).toFixed(1));
@@ -196,7 +246,7 @@ class SimulationEngine {
       } else {
         if (r01.status === 'SPRINTING_TO_INCIDENT') {
           this.completeSpidyRecon(r01);
-        } else {
+        } else if (r01.status === 'PATROLLING') {
           // Continuous patrolling waypoint flipping across levels
           if (r01.targetX >= 500) { r01.targetX = 160; r01.targetY = 230; }
           else { r01.targetX = 560; r01.targetY = 420; }
@@ -217,6 +267,41 @@ class SimulationEngine {
       } else {
         this.completeSpidyRecon(r02);
       }
+    }
+  }
+
+  handleRobotArrivalAtSOSWorker(robot, workerId) {
+    state.sosBlackPath.arrived = true;
+    robot.status = 'ASSISTING_WORKER';
+
+    const targetWorker = state.workers.find(w => w.id === workerId) || state.workers.find(w => w.sosActive);
+    if (targetWorker) {
+      targetWorker.status = 'BEING_ASSISTED';
+      targetWorker.hr = 88;
+      targetWorker.spO2 = 97;
+      targetWorker.temp = 36.8;
+      targetWorker.motion = 'STAND_STILL';
+      targetWorker.tagWarning = `🤖 ROBOT REACHED / ASSISTING WORKER: Automated triage initiated. Telemetry link verified.`;
+
+      // Prominently select worker for Health Panel display
+      state.selectedWorkerId = targetWorker.id;
+
+      state.workerReachedAlert = {
+        active: true,
+        workerId: targetWorker.id,
+        workerName: targetWorker.name,
+        robotId: robot.id,
+        robotName: robot.name,
+        timestamp: this.formatSimTime(state.simTime)
+      };
+
+      soundEngine.playSuccessFanfare();
+      this.emitAlert(
+        'WORKER_REACHED',
+        `WORKER REACHED / ASSISTING WORKER`,
+        `Autonomous Robot ${robot.name} has arrived at ${targetWorker.name}'s position (${targetWorker.id}). Emergency oxygen and vital stabilization deployed!`,
+        'normal'
+      );
     }
   }
 
@@ -278,13 +363,13 @@ class SimulationEngine {
 
   updateWorkerPositions(deltaSec) {
     state.workers.forEach(w => {
-      // 1. If worker is TRAPPED or in SOS, they STAND STILL in place (DO NOT MOVE)
-      if (w.status === 'TRAPPED' || w.status === 'SOS' || w.motion === 'STAND_STILL' || w.motion === 'MAN_DOWN') {
+      // 1. If worker is TRAPPED, SOS, or BEING_ASSISTED, they STAND STILL in place (DO NOT MOVE)
+      if (w.status === 'TRAPPED' || w.status === 'SOS' || w.status === 'BEING_ASSISTED' || w.motion === 'STAND_STILL' || w.motion === 'MAN_DOWN') {
         w.motion = 'STAND_STILL'; // Strictly stand in same position
         return;
       }
 
-      // 2. If worker is actively being escorted / evacuating after rescue
+      // 2. If worker is actively being evacuated
       if (w.status === 'BEING_RESCUED' && w.tagRedirectRoute && w.tagRedirectRoute.pathNodes?.length > 0) {
         w.motion = 'EVACUATING';
         const targetNodeId = w.tagRedirectRoute.safeExitNode || 'portal_a';
@@ -361,6 +446,12 @@ class SimulationEngine {
     state.hazardCycleIdx = (state.hazardCycleIdx + 1) % gasLocations.length;
     const loc = gasLocations[state.hazardCycleIdx];
 
+    // Clear any SOS mode
+    state.routeMode = 'DANGER';
+    state.activeScenario = 'DANGER';
+    state.sosBlackPath.active = false;
+    state.workerReachedAlert.active = false;
+
     state.hazards.gasPlume.active = true;
     state.hazards.gasPlume.epicenterNodeId = loc.nodeId;
     state.hazards.gasPlume.epicenterX = loc.x;
@@ -386,7 +477,7 @@ class SimulationEngine {
     }
 
     trappedWorker.status = 'TRAPPED';
-    trappedWorker.sosActive = true;
+    trappedWorker.sosActive = false; // Regular trapped hazard danger
     trappedWorker.motion = 'STAND_STILL'; // Trapped worker stands still in same position!
     trappedWorker.tagWarning = `⚠️ DANGER: Methane Spike (2.48% LEL) at ${loc.name}. Stand still; RED rescue team dispatched & GREEN safe route illuminated!`;
     state.selectedWorkerId = trappedWorker.id;
@@ -395,6 +486,7 @@ class SimulationEngine {
     const evacRoute = pathfinder.calculateWorkerEvacuationRoute(trappedWorker.id);
     trappedWorker.tagRedirectRoute = evacRoute;
     pathfinder.calculateRescueTeamIngressRoute(loc.nodeId, trappedWorker.id);
+    state.rescueTeamRoute.active = true;
     state.rescueTeamRoute.inProgress = true;
     state.rescueTeamRoute.progressStep = 0;
 
@@ -423,6 +515,12 @@ class SimulationEngine {
     state.floodCycleIdx = (state.floodCycleIdx + 1) % floodLocations.length;
     const loc = floodLocations[state.floodCycleIdx];
 
+    // Clear any SOS mode
+    state.routeMode = 'DANGER';
+    state.activeScenario = 'DANGER';
+    state.sosBlackPath.active = false;
+    state.workerReachedAlert.active = false;
+
     state.hazards.floodWater.active = true;
     state.hazards.floodWater.epicenterNodeId = loc.nodeId;
     state.hazards.floodWater.epicenterX = loc.x;
@@ -442,12 +540,14 @@ class SimulationEngine {
     // Trapped worker on this flooded level stands still
     const affectedWorker = state.workers.find(w => w.level === loc.level) || state.workers[3];
     affectedWorker.status = 'TRAPPED';
+    affectedWorker.sosActive = false;
     affectedWorker.motion = 'STAND_STILL'; // Stands still in place!
     affectedWorker.tagWarning = `🌊 INUNDATION WARNING: Water depth 48cm at ${loc.name}. Stand still; Surface rescue team en route!`;
 
     const evacRoute = pathfinder.calculateWorkerEvacuationRoute(affectedWorker.id);
     affectedWorker.tagRedirectRoute = evacRoute;
     pathfinder.calculateRescueTeamIngressRoute(loc.nodeId, affectedWorker.id);
+    state.rescueTeamRoute.active = true;
     state.rescueTeamRoute.inProgress = true;
     state.rescueTeamRoute.progressStep = 0;
 
@@ -469,32 +569,48 @@ class SimulationEngine {
     );
   }
 
-  triggerWorkerSOS() {
-    // Cycle through miners for SOS across different tunnels
-    const availableWorkers = state.workers.filter(w => !w.sosActive);
-    const targetWorker = availableWorkers.length > 0 ? availableWorkers[Math.floor(Math.random() * availableWorkers.length)] : state.workers[6];
+  triggerWorkerSOS(specificWorkerId = null) {
+    let targetWorker = null;
+    if (specificWorkerId) {
+      targetWorker = state.workers.find(w => w.id === specificWorkerId);
+    }
+    if (!targetWorker) {
+      const availableWorkers = state.workers.filter(w => !w.sosActive);
+      targetWorker = availableWorkers.length > 0 ? availableWorkers[Math.floor(Math.random() * availableWorkers.length)] : state.workers[6];
+    }
+
+    // Immediately switch application state to SOS_ACTIVE
+    state.routeMode = 'SOS_ACTIVE';
+    state.activeScenario = 'SOS_ACTIVE';
+    state.pipelinePhase = 'rescue';
+    state.workerReachedAlert.active = false;
+
+    // Immediately hide RED and GREEN routes
+    state.rescueTeamRoute.active = false;
+    state.rescueTeamRoute.inProgress = false;
 
     targetWorker.status = 'SOS';
     targetWorker.sosActive = true;
     targetWorker.motion = 'STAND_STILL'; // Trapped worker stands still in place!
     targetWorker.hr = 144;
     targetWorker.spO2 = 91;
-    targetWorker.tagWarning = `🚨 EMERGENCY SOS BEACON ACTIVE: Stand still; RED rescue team en route & GREEN evacuation route illuminated.`;
-    state.pipelinePhase = 'rescue';
+    targetWorker.temp = 37.4;
+    targetWorker.tagWarning = `🚨 EMERGENCY SOS BEACON ACTIVE: Stand still; robot dispatched along BLACK route!`;
     state.selectedWorkerId = targetWorker.id;
 
-    // Calculate RED Rescue Team Route & GREEN Worker Evac Route
-    const evacRoute = pathfinder.calculateWorkerEvacuationRoute(targetWorker.id);
-    targetWorker.tagRedirectRoute = evacRoute;
-    pathfinder.calculateRescueTeamIngressRoute(targetWorker.nodeId || 'face_4b', targetWorker.id);
-    state.rescueTeamRoute.inProgress = true;
-    state.rescueTeamRoute.progressStep = 0;
+    // Choose nearest active available robot
+    const robotKey = (!state.robots.r01.isFailed && state.robots.r01.status !== 'OFFLINE') ? 'r01' : 'r02';
+    const chosenRobot = state.robots[robotKey];
 
-    // Rapid dispatch Spidy
-    const spidy = (!state.robots.r01.isFailed && state.robots.r01.status !== 'OFFLINE') ? state.robots.r01 : state.robots.r02;
-    spidy.status = 'SPRINTING_TO_INCIDENT';
-    spidy.targetX = targetWorker.x;
-    spidy.targetY = targetWorker.y;
+    // Calculate BLACK Route: Robot -> SOS Worker
+    const blackRoute = pathfinder.calculateRobotToWorkerRoute(robotKey, targetWorker.id);
+    state.sosBlackPath = blackRoute;
+
+    // Dispatch chosen robot along BLACK route
+    chosenRobot.status = 'SPRINTING_TO_INCIDENT';
+    chosenRobot.targetX = targetWorker.x;
+    chosenRobot.targetY = targetWorker.y;
+    chosenRobot.targetZ = targetWorker.z;
 
     state.reconReport.inTransit = true;
     state.reconReport.incidentNodeId = targetWorker.nodeId || 'face_4b';
@@ -504,7 +620,7 @@ class SimulationEngine {
     this.emitAlert(
       'CRITICAL_SOS',
       `EMERGENCY SOS: ${targetWorker.name} (${targetWorker.id})`,
-      `Man-Down beacon triggered at ${targetWorker.level.toUpperCase()} (${targetWorker.role}). Worker standing still in position. RED rescue team dispatched & GREEN route calculated.`,
+      `Man-Down beacon triggered at ${targetWorker.level.toUpperCase()} (${targetWorker.role}). BLACK rescue route established; ${chosenRobot.name} navigating to victim.`,
       'critical'
     );
   }
@@ -516,7 +632,6 @@ class SimulationEngine {
     r01.isFailed = true;
     r01.status = 'FAILED';
     r01.failureReason = 'Rockfall impact jam / Telemetry Link Interrupted';
-    state.pipelinePhase = 'rescue';
 
     this.emitAlert(
       'ROBOT_FAILURE',
@@ -530,6 +645,12 @@ class SimulationEngine {
       r02.activeTransfer = true;
       r02.targetX = r01.targetX || 560;
       r02.targetY = r01.targetY || 420;
+
+      // If in SOS mode, redirect black route with R-02
+      if (state.routeMode === 'SOS_ACTIVE' && state.sosBlackPath.active) {
+        const targetWorkerId = state.sosBlackPath.targetWorkerId || state.selectedWorkerId;
+        pathfinder.calculateRobotToWorkerRoute('r02', targetWorkerId);
+      }
 
       this.emitAlert(
         'AI_FAILOVER',
@@ -546,10 +667,11 @@ class SimulationEngine {
     this.emitAlert(
       'SYSTEM_RESET',
       'NEXUS Subterranean Safe Mode Restored',
-      'All 6 subterranean levels, atmospheric, water, robot, 16 worker bio-tags, and 14 mesh nodes normalized to baseline.',
+      'All 5 subterranean tunnels, atmospheric, water, robot, 16 worker bio-tags, and 13 mesh nodes normalized to baseline.',
       'normal'
     );
   }
 }
 
 export const simEngine = new SimulationEngine();
+

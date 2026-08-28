@@ -1,7 +1,7 @@
 /**
- * NEXUS Sentinel Multi-Gas Sensor Grid Module (14 Distributed Nodes)
+ * NEXUS Sentinel Multi-Gas Sensor Grid Module (13 Distributed Nodes)
  * Features:
- * - 14 Distributed Multi-Gas Sentinel Nodes across 6 Subterranean Levels
+ * - 13 Distributed Multi-Gas Sentinel Nodes across 5 Subterranean Tunnels
  * - Statutory Safe Threshold Benchmarks
  * - Real-Time Multi-Gas Sparklines
  */
@@ -28,7 +28,7 @@ export class SensorModule {
       <div class="card-header">
         <div class="card-title-group">
           <i data-lucide="activity" style="color: var(--blue-primary);"></i>
-          <span class="card-title">DISTRIBUTED SENTINEL GRID (14 SENSOR NODES)</span>
+          <span class="card-title">DISTRIBUTED SENTINEL GRID (13 SENSOR NODES)</span>
         </div>
         <div class="card-actions">
           <span class="nav-badge" style="background: var(--blue-tint); color: var(--blue-primary); font-weight: 800;">

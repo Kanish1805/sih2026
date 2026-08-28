@@ -1,16 +1,18 @@
 /**
- * NEXUS 2D Subterranean Tactical Map & SLAM HUD Component (5 Tunnels)
+ * NEXUS 2D Subterranean Tactical Map & SLAM HUD Component (Exactly 5 Tunnels)
  * Features:
- * - 5 Subterranean Tunnels (Tunnel 1 to Tunnel 5, Depths 0m to -600m)
+ * - Exactly 5 Subterranean Tunnels (Tunnel 1 to Tunnel 5, Depths 0m to -580m)
  * - Clean HUD without top-left Sector / Benchmark pills
- * - 3-Member Rescue Team Patrol in fluorescent orange gear
- * - RED Route for Surface Rescue Team Ingress
- * - BLACK Route for Shortest Path to Safest Node (Accidents & 3s Spidy SOS, hides on SOS OFF)
+ * - State-Controlled Routes:
+ *     * DANGER: RED (Rescue Ingress) + GREEN (Safe Evac) ONLY
+ *     * SOS_ACTIVE: BLACK (Robot to SOS Worker) ONLY
+ *     * NORMAL: No routes
+ * - Full click/touch worker health inspection
  * - Hover-Only Spidy Recon Popups
  * - Click-to-Inspect for Accidental Zone Sensors
  */
 
-import { MINE_TOPOGRAPHY, STATUTORY_LIMITS, state } from '../engine/state.js';
+import { MINE_TOPOGRAPHY, STATUTORY_LIMITS, state, getRouteVisibilityState } from '../engine/state.js';
 import { soundEngine } from '../engine/sound_engine.js';
 
 export class MineMap2D {
@@ -37,8 +39,7 @@ export class MineMap2D {
       robots: true,
       hazards: true,
       routes: true,
-      mesh: true,
-      rescueTeam: true
+      mesh: true
     };
 
     this.init();
@@ -59,12 +60,12 @@ export class MineMap2D {
         </div>
 
         <div class="map-legend">
-          <div class="legend-item"><span class="legend-icon" style="background:#2563eb;"></span> Sentinel Node (12)</div>
-          <div class="legend-item"><span class="legend-icon" style="background:#059669;"></span> Indian Miner (13)</div>
-          <div class="legend-item"><span class="legend-icon" style="background:#ea580c;"></span> <strong>3-Member Rescue Patrol</strong></div>
-          <div class="legend-item"><span class="legend-icon" style="background:#7c3aed;"></span> Spidy Scout</div>
-          <div class="legend-item"><span class="legend-icon" style="background:#dc2626;"></span> <strong>RED: Rescue Ingress Path</strong></div>
-          <div class="legend-item"><span class="legend-icon" style="background:#000000; border:1px solid #fff;"></span> <strong>BLACK: Safest Node Route</strong></div>
+          <div class="legend-item"><span class="legend-icon" style="background:#2563eb;"></span> Sentinel Node (13)</div>
+          <div class="legend-item"><span class="legend-icon" style="background:#059669;"></span> Indian Miner (16)</div>
+          <div class="legend-item"><span class="legend-icon" style="background:#7c3aed;"></span> Spidy Scout (R-01/R-02)</div>
+          <div class="legend-item"><span class="legend-icon" style="background:#dc2626;"></span> <strong>RED: Rescue Route (Danger)</strong></div>
+          <div class="legend-item"><span class="legend-icon" style="background:#10b981;"></span> <strong>GREEN: Evacuation Route (Danger)</strong></div>
+          <div class="legend-item"><span class="legend-icon" style="background:#000000; border:1px solid #fff;"></span> <strong>BLACK: Robot SOS Route (SOS)</strong></div>
         </div>
       </div>
     `;
@@ -130,6 +131,32 @@ export class MineMap2D {
       this.handleClick(e);
     });
 
+    // Touch support for mobile / touchscreens
+    this.canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        this.isDragging = true;
+        this.dragStart = { x: touch.clientX - this.pan.x, y: touch.clientY - this.pan.y };
+        this.checkHover(touch);
+      }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (this.isDragging && e.touches.length === 1) {
+        const touch = e.touches[0];
+        this.pan.x = touch.clientX - this.dragStart.x;
+        this.pan.y = touch.clientY - this.dragStart.y;
+        this.checkHover(touch);
+      }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      this.isDragging = false;
+      if (this.hoveredEntity) {
+        this.handleClick(e);
+      }
+    });
+
     const btnZoomIn = this.container.querySelector('#btnZoomIn');
     const btnZoomOut = this.container.querySelector('#btnZoomOut');
     const btnResetView = this.container.querySelector('#btnResetView');
@@ -154,13 +181,6 @@ export class MineMap2D {
     state.workers.forEach(w => {
       if (Math.hypot(w.x - x, w.y - y) < 18) found = { type: 'worker', data: w };
     });
-
-    // Check Rescue Patrol
-    if (state.rescueTeamPatrol.active) {
-      state.rescueTeamPatrol.members.forEach(m => {
-        if (Math.hypot(m.x - x, m.y - y) < 16) found = { type: 'rescue_patrol', data: m };
-      });
-    }
 
     // Check Robots
     if (Math.hypot(state.robots.r01.x - x, state.robots.r01.y - y) < 24) {
@@ -226,12 +246,19 @@ export class MineMap2D {
     // 3. LoRa Mesh Connections
     if (this.layers.mesh) this.drawMeshConnections(ctx);
 
-    // 4. Dedicated Routes:
-    // RED: Rescue Ingress Path
-    if (this.layers.rescueTeam) this.drawRescueTeamRoute(ctx);
-
-    // BLACK: Shortest Route to Safest Node (Accident & Spidy SOS)
-    this.drawSafestNodeBlackPath(ctx);
+    // 4. Dedicated Routes by State Priority:
+    const routeVis = getRouteVisibilityState();
+    if (routeVis.mode === 'DANGER') {
+      // DANGER: RED (Rescue Route) + GREEN (Safe Evac Route) ONLY. BLACK is hidden!
+      this.drawRescueTeamRoute(ctx);
+      this.drawWorkerEvacuationGreenRoute(ctx);
+    } else if (routeVis.mode === 'SOS_ACTIVE') {
+      // SOS: BLACK Route ONLY (Robot -> SOS worker). RED & GREEN are hidden!
+      if (state.sosBlackPath && state.sosBlackPath.active && state.sosBlackPath.pathNodes.length > 0) {
+        this.drawSingleBlackPath(ctx, state.sosBlackPath.pathNodes);
+      }
+    }
+    // NORMAL: No routes rendered
 
     // 5. Environmental Hazards
     if (this.layers.hazards) this.drawHazards(ctx);
@@ -242,13 +269,10 @@ export class MineMap2D {
     // 7. Autonomous Spider Robots
     if (this.layers.robots) this.drawSpiderRobots(ctx);
 
-    // 8. 3-Member Rescue Team Patrol
-    if (this.layers.rescueTeam) this.drawRescueTeamPatrol(ctx);
-
-    // 9. 13 Indian Miners
+    // 8. 16 Indian Miners (Clickable/Touchable)
     if (this.layers.workers) this.drawWorkers(ctx);
 
-    // 10. Hover HUD Card (Spidy Recon popup appears only on hover)
+    // 9. Hover HUD Card (Spidy Recon popup appears only on hover)
     if (this.hoveredEntity) this.drawHoverHUD(ctx);
 
     ctx.restore();
@@ -260,10 +284,10 @@ export class MineMap2D {
     for (let x = 0; x <= 720; x += 40) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, 620);
+      ctx.lineTo(x, 560);
       ctx.stroke();
     }
-    for (let y = 0; y <= 620; y += 40) {
+    for (let y = 0; y <= 560; y += 40) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(720, y);
@@ -275,9 +299,9 @@ export class MineMap2D {
     ctx.fillText('SURFACE [0m]', 15, 75);
     ctx.fillText('TUNNEL 1 [-120m]', 15, 155);
     ctx.fillText('TUNNEL 2 [-240m]', 15, 245);
-    ctx.fillText('TUNNEL 3 [-360m]', 15, 335);
+    ctx.fillText('TUNNEL 3 [-380m]', 15, 335);
     ctx.fillText('TUNNEL 4 [-480m]', 15, 425);
-    ctx.fillText('TUNNEL 5 [-600m]', 15, 515);
+    ctx.fillText('TUNNEL 5 [-580m]', 15, 525);
   }
 
   drawMineNetwork(ctx) {
@@ -362,7 +386,8 @@ export class MineMap2D {
   }
 
   /**
-   * RED ROUTE: First-Responder Surface Rescue Team Ingress Path
+   * RED ROUTE: Rescue Ingress Path (Surface / Robot -> Endangered Worker)
+   * Rendered ONLY in DANGER mode.
    */
   drawRescueTeamRoute(ctx) {
     const rescue = state.rescueTeamRoute;
@@ -386,30 +411,42 @@ export class MineMap2D {
   }
 
   /**
-   * BLACK ROUTE: Shortest Route to Safest Node (Accidents & Spidy SOS)
-   * Automatically hides when SOS is turned OFF!
+   * GREEN ROUTE: Worker Safe Evacuation Egress Path (Worker -> Nearest Safe Node / Refuge)
+   * Rendered ONLY in DANGER mode.
    */
-  drawSafestNodeBlackPath(ctx) {
-    // 1. Spidy SOS Black Path (Active only when sosBlackPath.isReady is true)
-    if (state.sosBlackPath && state.sosBlackPath.active && state.sosBlackPath.isReady && state.sosBlackPath.pathNodes.length > 0) {
-      this.drawSingleBlackPath(ctx, state.sosBlackPath.pathNodes);
-      return;
-    }
+  drawWorkerEvacuationGreenRoute(ctx) {
+    const rescue = state.rescueTeamRoute;
+    if (!rescue || !rescue.active || !rescue.workerEgressNodes || rescue.workerEgressNodes.length === 0) return;
 
-    // 2. Accident Shortest Safe Route
-    if (state.accidentSafeRoute && state.accidentSafeRoute.active && state.accidentSafeRoute.pathNodes.length > 0) {
-      this.drawSingleBlackPath(ctx, state.accidentSafeRoute.pathNodes);
-      return;
-    }
+    ctx.strokeStyle = '#10b981'; // GREEN EVACUATION PATH
+    ctx.lineWidth = 5.0;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    // 3. Worker Manual Selected Route
-    const selectedWorker = state.workers.find(w => w.id === state.selectedWorkerId && w.tagRedirectRoute);
-    if (selectedWorker && selectedWorker.tagRedirectRoute.pathNodes) {
-      this.drawSingleBlackPath(ctx, selectedWorker.tagRedirectRoute.pathNodes);
-    }
+    ctx.beginPath();
+    rescue.workerEgressNodes.forEach((nodeId, idx) => {
+      const node = MINE_TOPOGRAPHY.nodes[nodeId];
+      if (!node) return;
+      if (idx === 0) ctx.moveTo(node.x, node.y);
+      else ctx.lineTo(node.x, node.y);
+    });
+    ctx.stroke();
+
+    // Subtle inner glowing dash
+    ctx.strokeStyle = '#a7f3d0';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([6, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
+  /**
+   * BLACK ROUTE: Robot -> SOS Worker
+   * Rendered ONLY in SOS_ACTIVE mode.
+   */
   drawSingleBlackPath(ctx, pathNodes) {
+    if (!pathNodes || pathNodes.length === 0) return;
+
     ctx.strokeStyle = '#000000'; // BLACK ROUTE
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
@@ -430,48 +467,6 @@ export class MineMap2D {
     ctx.setLineDash([6, 6]);
     ctx.stroke();
     ctx.setLineDash([]);
-  }
-
-  /**
-   * 3-MEMBER RESCUE TEAM PATROL
-   */
-  drawRescueTeamPatrol(ctx) {
-    const patrol = state.rescueTeamPatrol;
-    if (!patrol || !patrol.active) return;
-
-    patrol.members.forEach(m => {
-      ctx.fillStyle = m.color || '#ea580c';
-      ctx.beginPath();
-      ctx.arc(m.x, m.y, 7.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // White Rescue Helmet
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(m.x, m.y - 2, 4, 0, Math.PI);
-      ctx.fill();
-
-      // Blue Strobe Headlamp
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(m.x + 3, m.y - 2, 1.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Label
-      ctx.fillStyle = '#ea580c';
-      ctx.font = '800 8px JetBrains Mono';
-      ctx.fillText(m.id, m.x - 12, m.y + 15);
-    });
-
-    // Formation Connection Line
-    ctx.strokeStyle = 'rgba(234, 88, 12, 0.4)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(patrol.members[0].x, patrol.members[0].y);
-    ctx.lineTo(patrol.members[1].x, patrol.members[1].y);
-    ctx.moveTo(patrol.members[0].x, patrol.members[0].y);
-    ctx.lineTo(patrol.members[2].x, patrol.members[2].y);
-    ctx.stroke();
   }
 
   drawHazards(ctx) {
@@ -544,7 +539,7 @@ export class MineMap2D {
     if (r01 && r01.status !== 'OFFLINE') {
       this.drawSingleSpiderRobot(ctx, r01, r01.isFailed ? '#dc2626' : '#7c3aed', 'R-01 (SPIDY SCOUT)');
     }
-    if (r02 && (r02.status === 'SPRINTING_TO_INCIDENT' || r02.status === 'CONDUCTING_SLAM_RECON' || r02.activeTransfer)) {
+    if (r02 && (r02.status === 'SPRINTING_TO_INCIDENT' || r02.status === 'CONDUCTING_SLAM_RECON' || r02.status === 'ASSISTING_WORKER' || r02.activeTransfer)) {
       this.drawSingleSpiderRobot(ctx, r02, '#d97706', 'R-02 (SPIDY STANDBY)');
     }
   }
@@ -609,24 +604,27 @@ export class MineMap2D {
 
   drawWorkers(ctx) {
     state.workers.forEach(w => {
-      const isTrapped = w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive;
+      const isSOS = w.status === 'SOS' || w.sosActive;
+      const isAssisted = w.status === 'BEING_ASSISTED';
+      const isDanger = w.status === 'TRAPPED' || w.status === 'DANGER';
       const isWarn = w.tagWarning !== null || w.status === 'WARNING';
       const isSelected = w.id === state.selectedWorkerId;
-      const col = isTrapped ? '#dc2626' : (isWarn ? '#d97706' : '#059669');
+      const col = isSOS ? '#dc2626' : (isAssisted ? '#2563eb' : (isDanger || isWarn ? '#d97706' : '#059669'));
 
-      // Trapped Pulsing Wavefront
-      if (isTrapped) {
+      // SOS / Danger Pulsing Wavefront
+      if (isSOS || isDanger) {
         const pulseR = 15 + (Date.now() % 1000) * 0.025;
-        ctx.strokeStyle = `rgba(220, 38, 38, ${1 - (pulseR - 15) / 22})`;
+        ctx.strokeStyle = isSOS ? `rgba(220, 38, 38, ${1 - (pulseR - 15) / 22})` : `rgba(217, 119, 6, ${1 - (pulseR - 15) / 22})`;
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(w.x, w.y, pulseR, 0, Math.PI * 2);
         ctx.stroke();
       }
 
+      // Selection Halo
       if (isSelected) {
-        ctx.strokeStyle = '#2563eb';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(w.x, w.y, 14, 0, Math.PI * 2);
         ctx.stroke();
@@ -649,10 +647,10 @@ export class MineMap2D {
       ctx.font = '700 8px JetBrains Mono';
       ctx.fillText(`${w.id} (${w.name.split(' ')[0]})`, w.x - 20, w.y + 16);
 
-      if (isWarn || isTrapped) {
-        ctx.fillStyle = isTrapped ? '#dc2626' : '#d97706';
+      if (isSOS || isDanger || isAssisted) {
+        ctx.fillStyle = isSOS ? '#dc2626' : (isAssisted ? '#2563eb' : '#d97706');
         ctx.font = '800 8px Plus Jakarta Sans';
-        ctx.fillText(isTrapped ? '🚨 TRAPPED (STAND STILL)' : '⚠️ ESCAPING', w.x - 30, w.y - 12);
+        ctx.fillText(isSOS ? '🚨 SOS ACTIVE' : (isAssisted ? '🤖 ASSISTING WORKER' : '⚠️ DANGER / TRAPPED'), w.x - 32, w.y - 12);
       }
     });
   }
@@ -661,7 +659,7 @@ export class MineMap2D {
     ctx.beginPath();
     ctx.moveTo(x + radius, y);
     ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y + width, x + width, y + radius);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
     ctx.lineTo(x + width, y + height - radius);
     ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
     ctx.lineTo(x + radius, y + height);
@@ -704,9 +702,9 @@ export class MineMap2D {
 
       ctx.fillStyle = '#dc2626';
       ctx.font = '800 8.5px Plus Jakarta Sans';
-      ctx.fillText(`■ RED: Rescue Team Ingress Path`, x + 8, y + 64);
-      ctx.fillStyle = '#000000';
-      ctx.fillText(`■ BLACK: Safest Node Route`, x + 8, y + 78);
+      ctx.fillText(`■ RED: Rescue Route`, x + 8, y + 64);
+      ctx.fillStyle = '#10b981';
+      ctx.fillText(`■ GREEN: Safe Evac Route`, x + 8, y + 78);
     } else if (type === 'worker') {
       ctx.fillStyle = '#1d4ed8';
       ctx.font = '800 10.5px Plus Jakarta Sans';
@@ -714,21 +712,12 @@ export class MineMap2D {
 
       ctx.fillStyle = '#334155';
       ctx.font = '600 9px Plus Jakarta Sans';
-      ctx.fillText(`Role: ${data.role} (${data.tunnelName || data.level.toUpperCase()})`, x + 8, y + 32);
+      ctx.fillText(`Role: ${data.role} (${data.level.toUpperCase()})`, x + 8, y + 32);
       ctx.fillText(`Vitals: ${data.hr} BPM | SpO2: ${data.spO2}%`, x + 8, y + 46);
-      ctx.fillText(`Motion: ${data.motion} (Battery: ${data.battery}%)`, x + 8, y + 60);
-      ctx.fillStyle = data.status === 'TRAPPED' ? '#dc2626' : (data.tagWarning ? '#d97706' : '#059669');
+      ctx.fillText(`Motion: ${data.motion} (Temp: ${data.temp}°C)`, x + 8, y + 60);
+      ctx.fillStyle = data.status === 'SOS' ? '#dc2626' : (data.status === 'BEING_ASSISTED' ? '#2563eb' : (data.tagWarning ? '#d97706' : '#059669'));
       ctx.font = '700 8.5px Plus Jakarta Sans';
-      ctx.fillText(`Status: ${data.status} ${data.status === 'TRAPPED' ? '(STAND STILL)' : ''}`, x + 8, y + 76);
-    } else if (type === 'rescue_patrol') {
-      ctx.fillStyle = '#ea580c';
-      ctx.font = '800 10.5px Plus Jakarta Sans';
-      ctx.fillText(`RESCUE PATROL: ${data.name}`, x + 8, y + 16);
-      ctx.fillStyle = '#334155';
-      ctx.font = '600 9px Plus Jakarta Sans';
-      ctx.fillText(`Role: ${data.role}`, x + 8, y + 32);
-      ctx.fillText(`Status: ${state.rescueTeamPatrol.status}`, x + 8, y + 46);
-      ctx.fillText(`Gear: SCBA 60-min + Thermal FLIR`, x + 8, y + 60);
+      ctx.fillText(`Status: ${data.status}`, x + 8, y + 76);
     } else if (type === 'sensor') {
       ctx.fillStyle = '#1d4ed8';
       ctx.font = '800 10.5px Plus Jakarta Sans';
@@ -750,3 +739,4 @@ export class MineMap2D {
     }
   }
 }
+

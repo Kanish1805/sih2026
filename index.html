@@ -82,7 +82,7 @@
           <span class="mesh-ping-dot"></span>
           <div class="pill-data">
             <span class="pill-label">LORA MESH</span>
-            <span class="pill-value font-mono" id="headerMeshStatus">14/14 NODES LIVE</span>
+            <span class="pill-value font-mono" id="headerMeshStatus">13/13 NODES LIVE</span>
           </div>
         </div>
 
@@ -118,19 +118,19 @@
 
       <div class="dock-actions">
         <button class="btn-scenario btn-danger-action" id="btnTriggerSOS"
-          title="Trigger Emergency Man-Down Beacon on Miner">
+          title="Trigger Emergency Man-Down Beacon on Miner (BLACK Robot Route)">
           <i data-lucide="alert-octagon"></i>
           <span>Trigger Worker SOS</span>
         </button>
 
         <button class="btn-scenario btn-warning-action" id="btnIncreaseGas"
-          title="Inject Methane Gas Leak at Rotating Subterranean Heading">
+          title="Inject Methane Gas Leak at Rotating Subterranean Heading (RED + GREEN Routes)">
           <i data-lucide="flame"></i>
           <span>Increase Gas Leak</span>
         </button>
 
         <button class="btn-scenario btn-water-action" id="btnTriggerFlood"
-          title="Trigger Rising Flood Ingress at Rotating Sump Basin">
+          title="Trigger Rising Flood Ingress at Rotating Sump Basin (RED + GREEN Routes)">
           <i data-lucide="droplets"></i>
           <span>Trigger Flash Flood</span>
         </button>
@@ -142,7 +142,7 @@
         </button>
 
         <button class="btn-scenario btn-restore" id="btnRestoreSystem"
-          title="Restore All 6 Subterranean Levels to Safe Nominal Baseline">
+          title="Restore All 5 Subterranean Tunnels to Safe Nominal Baseline">
           <i data-lucide="rotate-ccw"></i>
           <span>Restore Safe System</span>
         </button>
@@ -166,7 +166,7 @@
           <div class="map-title-group">
             <i data-lucide="map-pin" style="color: var(--blue-primary);"></i>
             <span class="pane-title">PERSISTENT SUBTERRANEAN TACTICAL VIEWPORT</span>
-            <span class="pane-sub-badge font-mono">BHARAT BLOCK-IV [6 LEVELS / -680M DEPTH]</span>
+            <span class="pane-sub-badge font-mono">BHARAT BLOCK-IV [5 TUNNELS / -580M DEPTH]</span>
           </div>
 
           <!-- Dual Mode Toggle (2D Tactical Map vs 3D Digital Twin) -->
@@ -191,6 +191,59 @@
         <div class="map-viewport-wrapper" id="viewport3DWrapper">
           <div id="persistent3DDigitalTwinContainer" style="width: 100%; height: 100%;"></div>
         </div>
+
+        <!-- Prominent Robot Arrival Banner: "WORKER REACHED / ASSISTING WORKER" -->
+        <div class="robot-arrival-banner" id="robotArrivalBanner" style="display: none;">
+          <div class="rab-icon"><i data-lucide="bot"></i></div>
+          <div class="rab-content">
+            <div class="rab-title">WORKER REACHED / ASSISTING WORKER</div>
+            <div class="rab-sub" id="rabSubText">Autonomous Spidy Robot has reached victim and deployed stabilization telemetry.</div>
+          </div>
+          <button class="rab-close-btn" id="rabCloseBtn" title="Close"><i data-lucide="x"></i></button>
+        </div>
+
+        <!-- Floating Worker Health Panel (Dynamically updated on worker selection) -->
+        <div class="floating-worker-health-panel" id="floatingWorkerHealthPanel" style="display: none;">
+          <div class="fwh-header">
+            <div class="fwh-title-group">
+              <span class="fwh-pulse-dot" id="fwhPulseDot"></span>
+              <div>
+                <div class="fwh-name" id="fwhName">Worker Name</div>
+                <div class="fwh-id-role font-mono" id="fwhIdRole">W-01 | Role</div>
+              </div>
+            </div>
+            <button class="fwh-close-btn" id="fwhCloseBtn" title="Close Health Panel"><i data-lucide="x"></i></button>
+          </div>
+          <div class="fwh-body">
+            <div class="fwh-stat-grid">
+              <div class="fwh-stat-card">
+                <span class="fwh-label">LOCATION</span>
+                <span class="fwh-val" id="fwhLocation">TUNNEL 1</span>
+              </div>
+              <div class="fwh-stat-card">
+                <span class="fwh-label">HEART RATE</span>
+                <span class="fwh-val font-mono" id="fwhHR">74 BPM</span>
+              </div>
+              <div class="fwh-stat-card">
+                <span class="fwh-label">TEMPERATURE</span>
+                <span class="fwh-val font-mono" id="fwhTemp">36.6 °C</span>
+              </div>
+              <div class="fwh-stat-card">
+                <span class="fwh-label">OXYGEN LEVEL</span>
+                <span class="fwh-val font-mono" id="fwhSpO2">98 %</span>
+              </div>
+              <div class="fwh-stat-card">
+                <span class="fwh-label">MOVEMENT</span>
+                <span class="fwh-val" id="fwhMotion">WALKING</span>
+              </div>
+              <div class="fwh-stat-card">
+                <span class="fwh-label">SAFETY STATUS</span>
+                <span class="fwh-val font-mono" id="fwhStatus">NORMAL</span>
+              </div>
+            </div>
+            <div class="fwh-tag-alert" id="fwhTagAlert" style="display: none;"></div>
+          </div>
+        </div>
       </section>
 
       <!-- RIGHT PANE: DYNAMIC MODULE TACTICAL DECK -->
@@ -208,7 +261,7 @@
           </button>
           <button class="deck-tab" data-deck="sensors" title="Sentinel Sensor Grid">
             <i data-lucide="activity"></i>
-            <span>Sensors (14)</span>
+            <span>Sensors (13)</span>
           </button>
           <button class="deck-tab" data-deck="robots" title="Robotics Fleet & SLAM">
             <i data-lucide="bot"></i>

@@ -6,8 +6,8 @@
 class SoundEngine {
   constructor() {
     this.ctx = null;
-    this.isMuted = false;
     this.masterGain = null;
+    this.isMuted = false;
     this.unlocked = false;
 
     // Automatically unlock on first user gesture
@@ -27,7 +27,7 @@ class SoundEngine {
   }
 
   init() {
-    if (!this.ctx) {
+    if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();

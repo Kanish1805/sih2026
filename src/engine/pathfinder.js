@@ -155,7 +155,7 @@ class PathfinderEngine {
     let safeTargetNode = 'portal_a';
     if (worker.level === 'l3' || worker.level === 'l4') {
       safeTargetNode = 'refuge_chamber';
-    } else if (worker.level === 'l5' || worker.level === 'l6') {
+    } else if (worker.level === 'l5') {
       safeTargetNode = 'refuge_l5';
     }
 
@@ -185,7 +185,7 @@ class PathfinderEngine {
     let safeNodalPoint = 'portal_a';
     if (targetNode.level === 'l3' || targetNode.level === 'l4') {
       safeNodalPoint = 'refuge_chamber';
-    } else if (targetNode.level === 'l5' || targetNode.level === 'l6') {
+    } else if (targetNode.level === 'l5') {
       safeNodalPoint = 'refuge_l5';
     }
     const workerEgressNodes = this.findShortestPath(targetNodeId, safeNodalPoint);
@@ -223,6 +223,58 @@ class PathfinderEngine {
 
     return state.rescueTeamRoute;
   }
+
+  /**
+   * Calculates the BLACK Route for Robot -> SOS Worker
+   * Dispatches the nearest available robot and builds full waypoint path
+   */
+  calculateRobotToWorkerRoute(robotKey, targetWorkerId) {
+    const robot = state.robots[robotKey] || state.robots.r01;
+    const worker = state.workers.find(w => w.id === targetWorkerId) || state.workers[0];
+
+    // Find nearest graph node to robot
+    let nearestRobotNode = 'shaft_l1';
+    let minRobotDist = Infinity;
+    Object.values(MINE_TOPOGRAPHY.nodes).forEach(n => {
+      const d = Math.hypot(n.x - robot.x, n.y - robot.y);
+      if (d < minRobotDist) {
+        minRobotDist = d;
+        nearestRobotNode = n.id;
+      }
+    });
+
+    // Worker node
+    const targetNodeId = worker.nodeId || 'face_4b';
+    const pathNodes = this.findShortestPath(nearestRobotNode, targetNodeId);
+
+    // Build precise coordinate waypoints for robot navigation
+    const nodeWaypoints = pathNodes.map(nodeId => {
+      const n = MINE_TOPOGRAPHY.nodes[nodeId];
+      return { x: n.x, y: n.y, z: n.z, nodeId };
+    });
+
+    // Append worker's exact current coordinate as final target
+    nodeWaypoints.push({
+      x: worker.x,
+      y: worker.y,
+      z: worker.z,
+      nodeId: targetNodeId,
+      isFinalWorkerTarget: true
+    });
+
+    state.sosBlackPath = {
+      active: true,
+      assignedRobotId: robotKey,
+      targetWorkerId: worker.id,
+      pathNodes,
+      nodeWaypoints,
+      currentWaypointIdx: 0,
+      arrived: false
+    };
+
+    return state.sosBlackPath;
+  }
 }
 
 export const pathfinder = new PathfinderEngine();
+

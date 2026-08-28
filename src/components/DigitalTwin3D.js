@@ -2,34 +2,38 @@
  * NEXUS 3D Subterranean Holographic Digital Twin (Three.js)
  * 
  * Features:
- * - 5 Subterranean Tunnels (0m to -600m) with realistic rock strata, steel arch ribs, track rails, and surface headframe hoist tower
- * - High-Realism Hexapod Spider Robots: R01 Spidy Scout (Tactical Purple) & R02 Spidy Standby (Industrial Amber-Gold)
- * - Articulated 3-DOF robotic legs (Coxa, Hydraulic Femur, Carbon Tibia, Shock Tarsus) with tripod crawling kinematics
- * - RED 3D Tube for Surface Rescue Team Ingress Path & BLACK 3D Tube for Safest Node Route (hides on SOS off)
- * - 3-Member Rescue Team Patrol in 3D (Fluorescent Orange Gear & White Helmets)
- * - 13 Moving Indian Miners with dynamic vitals halos
- * - Realistic Volumetric Gas Plumes & Inundation Water Basins
+ * - Exactly 5 Subterranean Tunnels (Tunnel 1 to Tunnel 5, 0m to -580m)
+ * - High-Realism Hexapod Spider Robots: R01 Spidy Scout (Purple) & R02 Spidy Standby (Amber)
+ * - State Priority Routes in 3D:
+ *     * DANGER: RED (Rescue Ingress) + GREEN (Safe Evac) ONLY
+ *     * SOS_ACTIVE: BLACK (Robot -> SOS Worker) ONLY
+ *     * NORMAL: All routes hidden
+ * - 3D Raycasting click/touch selection for all 16 Indian Miners
+ * - Volumetric Gas Plumes & Inundation Water Basins
  */
 
 import * as THREE from 'three';
-import { MINE_TOPOGRAPHY, state } from '../engine/state.js';
+import { MINE_TOPOGRAPHY, state, getRouteVisibilityState } from '../engine/state.js';
 import { soundEngine } from '../engine/sound_engine.js';
 
 export class DigitalTwin3D {
-  constructor(containerId) {
+  constructor(containerId, onSelectEntity) {
     this.container = document.getElementById(containerId);
+    this.onSelectEntity = onSelectEntity;
     this.scene = null;
     this.camera = null;
     this.renderer = null;
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
     this.workerMeshes = {};
-    this.rescuePatrolMeshes = [];
     this.spiderR01 = null;
     this.spiderR02 = null;
     this.gasParticles = [];
     this.floodWaterMesh = null;
     this.elevatorMesh = null;
-    this.routeCurveMesh = null;
-    this.rescueRouteCurveMesh = null;
+    this.routeCurveMesh = null; // BLACK route tube
+    this.rescueRouteCurveMesh = null; // RED route tube
+    this.evacRouteCurveMesh = null; // GREEN route tube
     this.billboardSprites = [];
     this.isInitialized = false;
 
@@ -56,9 +60,9 @@ export class DigitalTwin3D {
         <div id="threeCanvasContainer" style="width: 100%; height: 100%; cursor: grab;"></div>
 
         <div class="twin-legend" style="position: absolute; left: 16px; bottom: 16px; background: rgba(4, 8, 20, 0.9); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px 12px; font-size: 10.5px; font-family: 'JetBrains Mono', monospace; color: #e2e8f0; display: flex; flex-direction: column; gap: 4px; z-index: 10;">
-          <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#dc2626; border-radius:2px;"></span> <strong>RED: Rescue Team Ingress</strong></div>
-          <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#000000; border:1px solid #fff; border-radius:2px;"></span> <strong>BLACK: Safest Node Route</strong></div>
-          <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#ea580c; border-radius:50%;"></span> <strong>3-Member Rescue Patrol</strong></div>
+          <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#dc2626; border-radius:2px;"></span> <strong>RED: Rescue Route (Danger)</strong></div>
+          <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#10b981; border-radius:2px;"></span> <strong>GREEN: Evacuation Route (Danger)</strong></div>
+          <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#000000; border:1px solid #fff; border-radius:2px;"></span> <strong>BLACK: Robot SOS Route (SOS)</strong></div>
         </div>
 
         <div class="twin-camera-presets" style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 10;">
@@ -98,7 +102,7 @@ export class DigitalTwin3D {
     blueLight.position.set(-300, -400, -300);
     this.scene.add(blueLight);
 
-    // Build Subterranean Mine Elements (5 Tunnels)
+    // Build Subterranean Mine Elements (Exactly 5 Tunnels + Surface)
     this.buildSubterraneanLevels();
     this.buildSubterraneanTunnels();
     this.buildElevatorShaft();
@@ -108,14 +112,10 @@ export class DigitalTwin3D {
     this.spiderR01 = this.createRealisticSpiderRobot('r01', 0x581c87, 0x9333ea, '🕷️ R-01 SPIDY SCOUT', '#c084fc');
     this.spiderR02 = this.createRealisticSpiderRobot('r02', 0x92400e, 0xd97706, '🕷️ R-02 SPIDY STANDBY', '#fbbf24');
 
-    // Build 3-Member Rescue Team Patrol in 3D
-    this.buildRescuePatrolAvatars();
-
     // Build Personnel, Hazards, Routes & Labels
     this.buildWorkerAvatars();
     this.buildVolumetricHazards();
-    this.buildEvacuationRoute3D();
-    this.buildRescueTeamRoute3D();
+    this.updateDynamicRouteMeshes();
     this.buildStaticBillboards();
     this.bindMouseControls(canvasMount);
     this.bindEvents();
@@ -174,7 +174,7 @@ export class DigitalTwin3D {
       const path = new THREE.LineCurve3(p1, p2);
       const radius = isShaft ? 15 : 11;
 
-      // Realistic Semi-Transparent Tunnel Tube
+      // Semi-Transparent Tunnel Tube
       const tubeGeo = new THREE.TubeGeometry(path, 20, radius, 12, false);
       const tubeMat = new THREE.MeshStandardMaterial({
         color: isShaft ? 0x0c2144 : 0x08172e,
@@ -284,7 +284,7 @@ export class DigitalTwin3D {
     const headMesh = new THREE.Mesh(headGeo, headMat);
     headGroup.add(headMesh);
 
-    // Stereoscopic Dual Glowing Cameras
+    // Stereoscopic Dual Cameras
     [-1.5, 1.5].forEach(zOffset => {
       const eyeGeo = new THREE.SphereGeometry(1.2, 12, 12);
       const eyeMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 1.2 });
@@ -350,14 +350,14 @@ export class DigitalTwin3D {
       legRoot.position.set(Math.cos(angle) * 8.5, 0, Math.sin(angle) * 8.5);
       legRoot.rotation.y = -angle;
 
-      // Segment 1: Coxa (Rotational Hip Pivot)
+      // Segment 1: Coxa
       const coxaGeo = new THREE.BoxGeometry(5, 2.5, 2.5);
       const legMat = new THREE.MeshStandardMaterial({ color: bodyColorHex, metalness: 0.8, roughness: 0.3 });
       const coxa = new THREE.Mesh(coxaGeo, legMat);
       coxa.position.set(2.5, 0, 0);
       legRoot.add(coxa);
 
-      // Segment 2: Femur (Hydraulic Upper Thigh)
+      // Segment 2: Femur
       const femurGroup = new THREE.Group();
       femurGroup.position.set(5, 0, 0);
       femurGroup.rotation.z = Math.PI / 3.8;
@@ -367,14 +367,14 @@ export class DigitalTwin3D {
       femur.position.set(0, 5.5, 0);
       femurGroup.add(femur);
 
-      // Hydraulic Piston Cylinder
+      // Piston
       const pistonGeo = new THREE.CylinderGeometry(0.6, 0.6, 7, 8);
       const pistonMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95 });
       const piston = new THREE.Mesh(pistonGeo, pistonMat);
       piston.position.set(-1.2, 4.5, 0);
       femurGroup.add(piston);
 
-      // Segment 3: Tibia (Lower Carbon Strut)
+      // Segment 3: Tibia
       const tibiaGroup = new THREE.Group();
       tibiaGroup.position.set(0, 11, 0);
       tibiaGroup.rotation.z = -Math.PI / 1.7;
@@ -384,7 +384,7 @@ export class DigitalTwin3D {
       tibia.position.set(0, 6.5, 0);
       tibiaGroup.add(tibia);
 
-      // Segment 4: Tarsus Foot (Magnetic Shock Absorber Tip)
+      // Segment 4: Foot
       const footGeo = new THREE.SphereGeometry(1.5, 10, 10);
       const footMat = new THREE.MeshStandardMaterial({ color: emissiveHex, emissive: emissiveHex, emissiveIntensity: 0.9 });
       const foot = new THREE.Mesh(footGeo, footMat);
@@ -418,50 +418,23 @@ export class DigitalTwin3D {
     };
   }
 
-  buildRescuePatrolAvatars() {
-    this.rescuePatrolMeshes = [];
-    for (let i = 0; i < 3; i++) {
-      const group = new THREE.Group();
-
-      const bodyGeo = new THREE.CylinderGeometry(3.6, 2.8, 10, 8);
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.4, roughness: 0.5 });
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.position.set(0, 5, 0);
-      group.add(body);
-
-      const headGeo = new THREE.SphereGeometry(3.2, 12, 12);
-      const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
-      const head = new THREE.Mesh(headGeo, headMat);
-      head.position.set(0, 10.5, 0);
-      group.add(head);
-
-      const lampGeo = new THREE.SphereGeometry(1.2, 8, 8);
-      const lampMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 1.5 });
-      const lamp = new THREE.Mesh(lampGeo, lampMat);
-      lamp.position.set(2.8, 11, 0);
-      group.add(lamp);
-
-      group.position.set(120, 0, (70 - 300) * 0.8);
-      group.visible = false;
-      this.scene.add(group);
-      this.rescuePatrolMeshes.push(group);
-    }
-  }
-
   buildWorkerAvatars() {
     state.workers.forEach(w => {
       const group = new THREE.Group();
+      group.userData = { workerId: w.id };
 
       const bodyGeo = new THREE.CylinderGeometry(3.2, 2.5, 9, 8);
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.5 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       body.position.set(0, 4.5, 0);
+      body.userData = { workerId: w.id };
       group.add(body);
 
       const headGeo = new THREE.SphereGeometry(3.2, 12, 12);
       const headMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
       const head = new THREE.Mesh(headGeo, headMat);
       head.position.set(0, 10, 0);
+      head.userData = { workerId: w.id };
       group.add(head);
 
       // Helmet Headlamp
@@ -469,6 +442,7 @@ export class DigitalTwin3D {
       const lampMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.2 });
       const lamp = new THREE.Mesh(lampGeo, lampMat);
       lamp.position.set(2.8, 10.5, 0);
+      lamp.userData = { workerId: w.id };
       group.add(lamp);
 
       // Floor Status Ring
@@ -476,6 +450,7 @@ export class DigitalTwin3D {
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
+      ring.userData = { workerId: w.id };
       group.add(ring);
 
       const label = this.createTextSprite(`${w.id} ${w.name.split(' ')[0]}`, '#10b981');
@@ -523,74 +498,90 @@ export class DigitalTwin3D {
   }
 
   /**
-   * 3D BLACK Safest Node Evacuation Route Tube (Worker -> Safe Nodal Point)
-   * Automatically hides when SOS is turned OFF!
+   * Update 3D Routes strictly according to Application State Priority:
+   * - DANGER: RED (Rescue Route) + GREEN (Safe Evac Route) ONLY
+   * - SOS_ACTIVE: BLACK (Robot -> SOS Worker) ONLY
+   * - NORMAL: All routes hidden
    */
-  buildEvacuationRoute3D() {
+  updateDynamicRouteMeshes() {
+    const routeVis = getRouteVisibilityState();
+
+    // 1. BLACK Route (SOS_ACTIVE only)
     if (this.routeCurveMesh) {
       this.scene.remove(this.routeCurveMesh);
       this.routeCurveMesh = null;
     }
+    if (routeVis.mode === 'SOS_ACTIVE' && state.sosBlackPath && state.sosBlackPath.active && state.sosBlackPath.pathNodes?.length > 1) {
+      const points = state.sosBlackPath.pathNodes.map(nodeId => {
+        const n = MINE_TOPOGRAPHY.nodes[nodeId];
+        return n ? new THREE.Vector3(n.x, n.z, (n.y - 300) * 0.8) : null;
+      }).filter(p => p !== null);
 
-    // Check if Spidy SOS Black Path is active
-    let pathNodes = null;
-    if (state.sosBlackPath && state.sosBlackPath.active && state.sosBlackPath.isReady && state.sosBlackPath.pathNodes?.length > 1) {
-      pathNodes = state.sosBlackPath.pathNodes;
-    } else if (state.accidentSafeRoute && state.accidentSafeRoute.active && state.accidentSafeRoute.pathNodes?.length > 1) {
-      pathNodes = state.accidentSafeRoute.pathNodes;
+      if (points.length >= 2) {
+        const curve = new THREE.CatmullRomCurve3(points);
+        const routeGeo = new THREE.TubeGeometry(curve, 36, 4.5, 8, false);
+        const routeMat = new THREE.MeshStandardMaterial({
+          color: 0x000000, // BLACK ROUTE
+          emissive: 0x000000,
+          roughness: 0.2,
+          metalness: 0.8
+        });
+        this.routeCurveMesh = new THREE.Mesh(routeGeo, routeMat);
+        this.scene.add(this.routeCurveMesh);
+      }
     }
 
-    if (!pathNodes) return;
-
-    const points = pathNodes.map(nodeId => {
-      const n = MINE_TOPOGRAPHY.nodes[nodeId];
-      return n ? new THREE.Vector3(n.x, n.z, (n.y - 300) * 0.8) : null;
-    }).filter(p => p !== null);
-
-    if (points.length < 2) return;
-
-    const curve = new THREE.CatmullRomCurve3(points);
-    const routeGeo = new THREE.TubeGeometry(curve, 36, 4.5, 8, false);
-    const routeMat = new THREE.MeshStandardMaterial({
-      color: 0x000000, // BLACK ROUTE
-      emissive: 0x000000,
-      roughness: 0.2,
-      metalness: 0.8
-    });
-    this.routeCurveMesh = new THREE.Mesh(routeGeo, routeMat);
-    this.scene.add(this.routeCurveMesh);
-  }
-
-  /**
-   * 3D RED Rescue Team Ingress Path Tube (Surface Portal -> Trapped Worker)
-   */
-  buildRescueTeamRoute3D() {
+    // 2. RED Route (DANGER only)
     if (this.rescueRouteCurveMesh) {
       this.scene.remove(this.rescueRouteCurveMesh);
       this.rescueRouteCurveMesh = null;
     }
+    if (routeVis.mode === 'DANGER' && state.rescueTeamRoute && state.rescueTeamRoute.active && state.rescueTeamRoute.pathNodes?.length > 1) {
+      const points = state.rescueTeamRoute.pathNodes.map(nodeId => {
+        const n = MINE_TOPOGRAPHY.nodes[nodeId];
+        return n ? new THREE.Vector3(n.x, n.z + 1.5, (n.y - 300) * 0.8) : null;
+      }).filter(p => p !== null);
 
-    const rescue = state.rescueTeamRoute;
-    if (!rescue || !rescue.active || !rescue.pathNodes || rescue.pathNodes.length < 2) return;
+      if (points.length >= 2) {
+        const curve = new THREE.CatmullRomCurve3(points);
+        const routeGeo = new THREE.TubeGeometry(curve, 36, 4.0, 8, false);
+        const routeMat = new THREE.MeshStandardMaterial({
+          color: 0xdc2626, // RED ROUTE
+          emissive: 0xdc2626,
+          emissiveIntensity: 0.9,
+          transparent: true,
+          opacity: 0.85
+        });
+        this.rescueRouteCurveMesh = new THREE.Mesh(routeGeo, routeMat);
+        this.scene.add(this.rescueRouteCurveMesh);
+      }
+    }
 
-    const points = rescue.pathNodes.map(nodeId => {
-      const n = MINE_TOPOGRAPHY.nodes[nodeId];
-      return n ? new THREE.Vector3(n.x, n.z + 1.5, (n.y - 300) * 0.8) : null;
-    }).filter(p => p !== null);
+    // 3. GREEN Route (DANGER only)
+    if (this.evacRouteCurveMesh) {
+      this.scene.remove(this.evacRouteCurveMesh);
+      this.evacRouteCurveMesh = null;
+    }
+    if (routeVis.mode === 'DANGER' && state.rescueTeamRoute && state.rescueTeamRoute.active && state.rescueTeamRoute.workerEgressNodes?.length > 1) {
+      const points = state.rescueTeamRoute.workerEgressNodes.map(nodeId => {
+        const n = MINE_TOPOGRAPHY.nodes[nodeId];
+        return n ? new THREE.Vector3(n.x, n.z - 1.5, (n.y - 300) * 0.8) : null;
+      }).filter(p => p !== null);
 
-    if (points.length < 2) return;
-
-    const curve = new THREE.CatmullRomCurve3(points);
-    const routeGeo = new THREE.TubeGeometry(curve, 36, 4.0, 8, false);
-    const routeMat = new THREE.MeshStandardMaterial({
-      color: 0xdc2626, // RED ROUTE
-      emissive: 0xdc2626,
-      emissiveIntensity: 0.9,
-      transparent: true,
-      opacity: 0.85
-    });
-    this.rescueRouteCurveMesh = new THREE.Mesh(routeGeo, routeMat);
-    this.scene.add(this.rescueRouteCurveMesh);
+      if (points.length >= 2) {
+        const curve = new THREE.CatmullRomCurve3(points);
+        const routeGeo = new THREE.TubeGeometry(curve, 36, 3.8, 8, false);
+        const routeMat = new THREE.MeshStandardMaterial({
+          color: 0x10b981, // GREEN ROUTE
+          emissive: 0x10b981,
+          emissiveIntensity: 0.9,
+          transparent: true,
+          opacity: 0.85
+        });
+        this.evacRouteCurveMesh = new THREE.Mesh(routeGeo, routeMat);
+        this.scene.add(this.evacRouteCurveMesh);
+      }
+    }
   }
 
   buildStaticBillboards() {
@@ -599,9 +590,9 @@ export class DigitalTwin3D {
       { text: 'SHAFT 1 HEADFRAME', pos: [320, 45, (70 - 300) * 0.8], col: '#38bdf8' },
       { text: 'TUNNEL 1 [-120m]', pos: [140, -100, (150 - 300) * 0.8], col: '#38bdf8' },
       { text: 'TUNNEL 2 [-240m]', pos: [150, -220, (240 - 300) * 0.8], col: '#fbbf24' },
-      { text: 'TUNNEL 3 [-360m]', pos: [590, -340, (330 - 300) * 0.8], col: '#f87171' },
+      { text: 'TUNNEL 3 [-380m]', pos: [590, -340, (330 - 300) * 0.8], col: '#f87171' },
       { text: 'TUNNEL 4 [-480m]', pos: [570, -460, (420 - 300) * 0.8], col: '#c084fc' },
-      { text: 'TUNNEL 5 [-600m]', pos: [580, -580, (510 - 300) * 0.8], col: '#34d399' }
+      { text: 'TUNNEL 5 [-580m]', pos: [580, -560, (510 - 300) * 0.8], col: '#34d399' }
     ];
 
     tunnels.forEach(s => {
@@ -640,10 +631,15 @@ export class DigitalTwin3D {
   }
 
   bindMouseControls(element) {
+    let clickStartX = 0;
+    let clickStartY = 0;
+
     element.addEventListener('mousedown', (e) => {
       this.isMouseDown = true;
       this.mouseType = e.button;
       this.prevMousePos = { x: e.clientX, y: e.clientY };
+      clickStartX = e.clientX;
+      clickStartY = e.clientY;
       element.style.cursor = 'grabbing';
     });
 
@@ -664,9 +660,52 @@ export class DigitalTwin3D {
       }
     });
 
-    window.addEventListener('mouseup', () => {
+    window.addEventListener('mouseup', (e) => {
       this.isMouseDown = false;
       element.style.cursor = 'grab';
+
+      // If mouse moved very little, treat as click/selection
+      const moved = Math.hypot(e.clientX - clickStartX, e.clientY - clickStartY);
+      if (moved < 6) {
+        this.handleRaycastClick(e.clientX, e.clientY);
+      }
+    });
+
+    // Touch support for 3D selection
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    element.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        this.isMouseDown = true;
+        this.prevMousePos = { x: touch.clientX, y: touch.clientY };
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }
+    }, { passive: true });
+
+    element.addEventListener('touchmove', (e) => {
+      if (!this.isMouseDown || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - this.prevMousePos.x;
+      const deltaY = touch.clientY - this.prevMousePos.y;
+      this.prevMousePos = { x: touch.clientX, y: touch.clientY };
+
+      this.targetSpherical.theta -= deltaX * 0.005;
+      this.targetSpherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, this.targetSpherical.phi + deltaY * 0.005));
+      this.autoRotate = false;
+    }, { passive: true });
+
+    element.addEventListener('touchend', (e) => {
+      this.isMouseDown = false;
+      if (e.changedTouches.length === 1) {
+        const touch = e.changedTouches[0];
+        const moved = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+        if (moved < 8) {
+          this.handleRaycastClick(touch.clientX, touch.clientY);
+        }
+      }
     });
 
     element.addEventListener('wheel', (e) => {
@@ -676,6 +715,47 @@ export class DigitalTwin3D {
     });
 
     element.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  handleRaycastClick(clientX, clientY) {
+    if (!this.renderer || !this.camera) return;
+    const canvasMount = this.container.querySelector('#threeCanvasContainer');
+    if (!canvasMount) return;
+    const rect = canvasMount.getBoundingClientRect();
+
+    this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    const workerMeshesList = [];
+    Object.keys(this.workerMeshes).forEach(wId => {
+      const item = this.workerMeshes[wId];
+      if (item && item.group) {
+        item.group.traverse(child => {
+          if (child.isMesh) {
+            child.userData = { workerId: wId };
+            workerMeshesList.push(child);
+          }
+        });
+      }
+    });
+
+    const intersects = this.raycaster.intersectObjects(workerMeshesList, false);
+    if (intersects.length > 0) {
+      const hitObj = intersects[0].object;
+      const workerId = hitObj.userData?.workerId;
+      if (workerId) {
+        const worker = state.workers.find(w => w.id === workerId);
+        if (worker) {
+          soundEngine.playSonarPing();
+          state.selectedWorkerId = worker.id;
+          if (this.onSelectEntity) {
+            this.onSelectEntity('worker', worker);
+          }
+        }
+      }
+    }
   }
 
   updateCameraPosition() {
@@ -732,43 +812,38 @@ export class DigitalTwin3D {
     this.animateSpiderRobot(this.spiderR01, state.robots.r01);
     this.animateSpiderRobot(this.spiderR02, state.robots.r02);
 
-    // 3. Elevator Hoist Movement spanning -600m depth
+    // 3. Elevator Hoist Movement spanning -580m depth
     if (this.elevatorMesh) {
-      this.elevatorMesh.position.y = -300 + Math.sin(Date.now() * 0.0008) * 280;
+      this.elevatorMesh.position.y = -300 + Math.sin(Date.now() * 0.0008) * 260;
     }
 
-    // 4. Update 3-Member Rescue Team Patrol in 3D
-    const patrol = state.rescueTeamPatrol;
-    if (patrol && patrol.active) {
-      patrol.members.forEach((m, idx) => {
-        if (this.rescuePatrolMeshes[idx]) {
-          this.rescuePatrolMeshes[idx].visible = true;
-          this.rescuePatrolMeshes[idx].position.set(m.x, m.z, (m.y - 300) * 0.8);
-        }
-      });
-    } else {
-      this.rescuePatrolMeshes.forEach(mesh => { mesh.visible = false; });
-    }
-
-    // 5. Worker Positions & Status Halos
+    // 4. Worker Positions & Dynamic Status Halos
     state.workers.forEach(w => {
       const item = this.workerMeshes[w.id];
       if (item) {
         item.group.position.set(w.x, w.z, (w.y - 300) * 0.8);
-        const isTrapped = w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive;
-        const col = isTrapped ? 0xdc2626 : (w.tagWarning ? 0xd97706 : 0x10b981);
+        const isSOS = w.status === 'SOS' || w.sosActive;
+        const isAssisted = w.status === 'BEING_ASSISTED';
+        const isDanger = w.status === 'TRAPPED' || w.status === 'DANGER';
+        const isSelected = w.id === state.selectedWorkerId;
+
+        const col = isSOS ? 0xdc2626 : (isAssisted ? 0x2563eb : (isDanger || w.tagWarning ? 0xd97706 : 0x10b981));
 
         item.body.material.color.setHex(col);
-        item.ring.material.color.setHex(col);
+        item.ring.material.color.setHex(isSelected ? 0x3b82f6 : col);
 
-        if (isTrapped) {
+        if (isSOS || isDanger) {
           const pulse = 1.0 + Math.sin(Date.now() * 0.008) * 0.45;
           item.ring.scale.set(pulse, pulse, pulse);
+        } else if (isSelected) {
+          item.ring.scale.set(1.3, 1.3, 1.3);
+        } else {
+          item.ring.scale.set(1.0, 1.0, 1.0);
         }
       }
     });
 
-    // 6. Hazards Animation
+    // 5. Hazards Animation
     if (this.gasCloudMesh) {
       this.gasCloudMesh.visible = state.hazards.gasPlume.active;
       if (state.hazards.gasPlume.active) {
@@ -790,9 +865,8 @@ export class DigitalTwin3D {
       }
     }
 
-    // Refresh Dynamic Routes
-    this.buildEvacuationRoute3D();
-    this.buildRescueTeamRoute3D();
+    // 6. Refresh Dynamic Routes strictly based on state priority
+    this.updateDynamicRouteMeshes();
 
     this.renderer.render(this.scene, this.camera);
   }

@@ -1,6 +1,6 @@
 /**
  * NEXUS Global State & Subterranean Topography Definition
- * Real-Time Digital Twin, 6 Underground Tunnels, Indian Worker Roster, Multi-Node Dynamic Hazards, Dual Spidy Robotics
+ * Real-Time Digital Twin, Exactly 5 Underground Tunnels, Indian Worker Roster, Multi-Node Dynamic Hazards, Dual Spidy Robotics
  */
 
 export const STATUTORY_LIMITS = {
@@ -16,51 +16,45 @@ export const STATUTORY_LIMITS = {
 export const MINE_TOPOGRAPHY = {
   levels: [
     { id: 'l0', name: 'Surface Access & Headframe Portal', depth: 0, color: '#94a3b8' },
-    { id: 'l1', name: 'Sub-level 1 (North Ventilation Drift & Substation)', depth: -120, color: '#38bdf8' },
-    { id: 'l2', name: 'Sub-level 2 (Central Haulage & Sump Basin)', depth: -240, color: '#fbbf24' },
-    { id: 'l3', name: 'Sub-level 3 (Face 4B Heading & Refuge Chamber 1)', depth: -380, color: '#f87171' },
-    { id: 'l4', name: 'Sub-level 4 (Deep Incline Drift & Seam 5A Extraction)', depth: -480, color: '#c084fc' },
-    { id: 'l5', name: 'Sub-level 5 (Underground Crusher Station & South Gallery)', depth: -580, color: '#34d399' },
-    { id: 'l6', name: 'Sub-level 6 (Deep Horizon Crosscut & Seam 6B & Deep Refuge 2)', depth: -680, color: '#f43f5e' }
+    { id: 'l1', name: 'Tunnel 1 (North Ventilation Drift & Substation)', depth: -120, color: '#38bdf8' },
+    { id: 'l2', name: 'Tunnel 2 (Central Haulage & Sump Basin)', depth: -240, color: '#fbbf24' },
+    { id: 'l3', name: 'Tunnel 3 (Face 4B Heading & Refuge Chamber 1)', depth: -380, color: '#f87171' },
+    { id: 'l4', name: 'Tunnel 4 (Deep Incline Drift & Seam 5A Extraction)', depth: -480, color: '#c084fc' },
+    { id: 'l5', name: 'Tunnel 5 (Underground Crusher Station & South Gallery)', depth: -580, color: '#34d399' }
   ],
   nodes: {
     // Level 0: Surface
     'portal_a': { id: 'portal_a', name: 'Surface Portal Entry & Staging Bay', x: 120, y: 70, z: 0, level: 'l0', type: 'portal' },
     'shaft_top': { id: 'shaft_top', name: 'Shaft 1 Main Hoist Collar', x: 320, y: 70, z: 0, level: 'l0', type: 'shaft' },
 
-    // Level 1: Sub-level 1 (-120m)
-    'shaft_l1': { id: 'shaft_l1', name: 'Shaft 1 (L1 Station -120m)', x: 320, y: 150, z: -120, level: 'l1', type: 'shaft' },
-    'junc_l1_w': { id: 'junc_l1_w', name: 'L1 Substation West (-120m)', x: 140, y: 150, z: -120, level: 'l1', type: 'junction' },
-    'junc_l1_e': { id: 'junc_l1_e', name: 'L1 Ventilation Crosscut East (-120m)', x: 520, y: 150, z: -120, level: 'l1', type: 'junction' },
+    // Level 1: Tunnel 1 (-120m)
+    'shaft_l1': { id: 'shaft_l1', name: 'Shaft 1 (Tunnel 1 Station -120m)', x: 320, y: 150, z: -120, level: 'l1', type: 'shaft' },
+    'junc_l1_w': { id: 'junc_l1_w', name: 'Tunnel 1 Substation West (-120m)', x: 140, y: 150, z: -120, level: 'l1', type: 'junction' },
+    'junc_l1_e': { id: 'junc_l1_e', name: 'Tunnel 1 Ventilation Crosscut East (-120m)', x: 520, y: 150, z: -120, level: 'l1', type: 'junction' },
 
-    // Level 2: Sub-level 2 (-240m)
-    'shaft_l2': { id: 'shaft_l2', name: 'Shaft 1 (L2 Station -240m)', x: 320, y: 230, z: -240, level: 'l2', type: 'shaft' },
-    'junc_l2_w': { id: 'junc_l2_w', name: 'L2 Haulage Junction West (-240m)', x: 150, y: 230, z: -240, level: 'l2', type: 'junction' },
-    'sump_l2': { id: 'sump_l2', name: 'L2 Drainage Sump Pump Basin (-260m)', x: 150, y: 280, z: -260, level: 'l2', type: 'hazard_zone' },
-    'junc_l2_e': { id: 'junc_l2_e', name: 'L2 Ore Chute Feeder East (-240m)', x: 520, y: 230, z: -240, level: 'l2', type: 'junction' },
+    // Level 2: Tunnel 2 (-240m)
+    'shaft_l2': { id: 'shaft_l2', name: 'Shaft 1 (Tunnel 2 Station -240m)', x: 320, y: 230, z: -240, level: 'l2', type: 'shaft' },
+    'junc_l2_w': { id: 'junc_l2_w', name: 'Tunnel 2 Haulage Junction West (-240m)', x: 150, y: 230, z: -240, level: 'l2', type: 'junction' },
+    'sump_l2': { id: 'sump_l2', name: 'Tunnel 2 Drainage Sump Basin (-260m)', x: 150, y: 280, z: -260, level: 'l2', type: 'hazard_zone' },
+    'junc_l2_e': { id: 'junc_l2_e', name: 'Tunnel 2 Ore Chute Feeder East (-240m)', x: 520, y: 230, z: -240, level: 'l2', type: 'junction' },
 
-    // Level 3: Sub-level 3 (-380m)
-    'shaft_l3': { id: 'shaft_l3', name: 'Shaft 1 (L3 Deep Station -380m)', x: 320, y: 330, z: -380, level: 'l3', type: 'shaft' },
-    'junc_l3_w': { id: 'junc_l3_w', name: 'L3 Survey Crosscut West (-380m)', x: 140, y: 330, z: -380, level: 'l3', type: 'junction' },
+    // Level 3: Tunnel 3 (-380m)
+    'shaft_l3': { id: 'shaft_l3', name: 'Shaft 1 (Tunnel 3 Deep Station -380m)', x: 320, y: 330, z: -380, level: 'l3', type: 'shaft' },
+    'junc_l3_w': { id: 'junc_l3_w', name: 'Tunnel 3 Survey Crosscut West (-380m)', x: 140, y: 330, z: -380, level: 'l3', type: 'junction' },
     'refuge_chamber': { id: 'refuge_chamber', name: 'Reinforced Refuge Chamber 1 (-380m)', x: 440, y: 330, z: -380, level: 'l3', type: 'refuge' },
     'face_4b': { id: 'face_4b', name: 'Extraction Face 4B Active Heading (-380m)', x: 590, y: 330, z: -380, level: 'l3', type: 'face' },
 
-    // Level 4: Sub-level 4 (-480m) [NEW]
-    'shaft_l4': { id: 'shaft_l4', name: 'Shaft 1 (L4 Intermediate Station -480m)', x: 320, y: 420, z: -480, level: 'l4', type: 'shaft' },
-    'junc_l4_w': { id: 'junc_l4_w', name: 'L4 West Conveyor Incline (-480m)', x: 150, y: 420, z: -480, level: 'l4', type: 'junction' },
-    'sump_l4': { id: 'sump_l4', name: 'L4 Auxiliary Sump Basin (-500m)', x: 150, y: 460, z: -500, level: 'l4', type: 'hazard_zone' },
+    // Level 4: Tunnel 4 (-480m)
+    'shaft_l4': { id: 'shaft_l4', name: 'Shaft 1 (Tunnel 4 Intermediate Station -480m)', x: 320, y: 420, z: -480, level: 'l4', type: 'shaft' },
+    'junc_l4_w': { id: 'junc_l4_w', name: 'Tunnel 4 West Conveyor Incline (-480m)', x: 150, y: 420, z: -480, level: 'l4', type: 'junction' },
+    'sump_l4': { id: 'sump_l4', name: 'Tunnel 4 Auxiliary Sump Basin (-500m)', x: 150, y: 460, z: -500, level: 'l4', type: 'hazard_zone' },
     'face_5a': { id: 'face_5a', name: 'Extraction Heading Seam 5A (-480m)', x: 560, y: 420, z: -480, level: 'l4', type: 'face' },
 
-    // Level 5: Sub-level 5 (-580m) [NEW]
-    'shaft_l5': { id: 'shaft_l5', name: 'Shaft 1 (L5 Deep Hoist Station -580m)', x: 320, y: 520, z: -580, level: 'l5', type: 'shaft' },
+    // Level 5: Tunnel 5 (-580m)
+    'shaft_l5': { id: 'shaft_l5', name: 'Shaft 1 (Tunnel 5 Deep Hoist Station -580m)', x: 320, y: 520, z: -580, level: 'l5', type: 'shaft' },
     'crusher_l5': { id: 'crusher_l5', name: 'Underground Jaw Crusher Station (-580m)', x: 160, y: 520, z: -580, level: 'l5', type: 'junction' },
-    'refuge_l5': { id: 'refuge_l5', name: 'L5 South Deep Refuge Chamber (-580m)', x: 440, y: 520, z: -580, level: 'l5', type: 'refuge' },
-    'junc_l5_e': { id: 'junc_l5_e', name: 'South Exploration Gallery Heading (-580m)', x: 570, y: 520, z: -580, level: 'l5', type: 'face' },
-
-    // Level 6: Sub-level 6 (-680m) [NEW]
-    'shaft_l6': { id: 'shaft_l6', name: 'Shaft 1 (L6 Deep Horizon Terminal -680m)', x: 320, y: 620, z: -680, level: 'l6', type: 'shaft' },
-    'junc_l6_w': { id: 'junc_l6_w', name: 'L6 Diamond Drilling Crosscut (-680m)', x: 150, y: 620, z: -680, level: 'l6', type: 'junction' },
-    'face_6b': { id: 'face_6b', name: 'Lower Seam 6B Deep Horizon Heading (-680m)', x: 580, y: 620, z: -680, level: 'l6', type: 'face' }
+    'refuge_l5': { id: 'refuge_l5', name: 'Tunnel 5 South Deep Refuge Chamber (-580m)', x: 440, y: 520, z: -580, level: 'l5', type: 'refuge' },
+    'junc_l5_e': { id: 'junc_l5_e', name: 'South Exploration Gallery Heading (-580m)', x: 570, y: 520, z: -580, level: 'l5', type: 'face' }
   },
   edges: [
     // Surface & Shaft 1 Spine
@@ -70,51 +64,45 @@ export const MINE_TOPOGRAPHY = {
     { from: 'shaft_l2', to: 'shaft_l3', length: 140, slope: 'vertical_shaft' },
     { from: 'shaft_l3', to: 'shaft_l4', length: 100, slope: 'vertical_shaft' },
     { from: 'shaft_l4', to: 'shaft_l5', length: 100, slope: 'vertical_shaft' },
-    { from: 'shaft_l5', to: 'shaft_l6', length: 100, slope: 'vertical_shaft' },
 
-    // Level 1 Drifts
+    // Tunnel 1 Drifts
     { from: 'shaft_l1', to: 'junc_l1_w', length: 180, slope: 'drift' },
     { from: 'shaft_l1', to: 'junc_l1_e', length: 200, slope: 'drift' },
     { from: 'junc_l1_e', to: 'junc_l2_e', length: 160, slope: 'vent_incline' },
 
-    // Level 2 Drifts
+    // Tunnel 2 Drifts
     { from: 'shaft_l2', to: 'junc_l2_w', length: 170, slope: 'drift' },
     { from: 'junc_l2_w', to: 'sump_l2', length: 70, slope: 'decline' },
     { from: 'shaft_l2', to: 'junc_l2_e', length: 200, slope: 'drift' },
 
-    // Level 3 Drifts
+    // Tunnel 3 Drifts
     { from: 'shaft_l3', to: 'junc_l3_w', length: 180, slope: 'drift' },
     { from: 'shaft_l3', to: 'refuge_chamber', length: 120, slope: 'drift' },
     { from: 'refuge_chamber', to: 'face_4b', length: 150, slope: 'heading' },
 
-    // Level 4 Drifts [NEW]
+    // Tunnel 4 Drifts
     { from: 'shaft_l4', to: 'junc_l4_w', length: 170, slope: 'drift' },
     { from: 'junc_l4_w', to: 'sump_l4', length: 60, slope: 'decline' },
     { from: 'shaft_l4', to: 'face_5a', length: 240, slope: 'heading' },
 
-    // Level 5 Drifts [NEW]
+    // Tunnel 5 Drifts
     { from: 'shaft_l5', to: 'crusher_l5', length: 160, slope: 'drift' },
     { from: 'shaft_l5', to: 'refuge_l5', length: 120, slope: 'drift' },
-    { from: 'refuge_l5', to: 'junc_l5_e', length: 130, slope: 'heading' },
-
-    // Level 6 Drifts [NEW]
-    { from: 'shaft_l6', to: 'junc_l6_w', length: 170, slope: 'drift' },
-    { from: 'shaft_l6', to: 'face_6b', length: 260, slope: 'heading' }
+    { from: 'refuge_l5', to: 'junc_l5_e', length: 130, slope: 'heading' }
   ]
 };
 
-// Dynamic hazard candidate locations across all levels
+// Dynamic hazard candidate locations across the 5 subterranean tunnels
 export const HAZARD_LOCATIONS = [
-  { nodeId: 'face_4b', name: 'Extraction Face 4B (Sub-level 3 -380m)', x: 590, y: 330, z: -380, level: 'l3', sensorId: 'SN-08', hazardType: 'GAS' },
-  { nodeId: 'face_5a', name: 'Seam 5A Extraction Heading (Sub-level 4 -480m)', x: 560, y: 420, z: -480, level: 'l4', sensorId: 'SN-10', hazardType: 'GAS' },
-  { nodeId: 'face_6b', name: 'Lower Seam 6B Deep Horizon (Sub-level 6 -680m)', x: 580, y: 620, z: -680, level: 'l6', sensorId: 'SN-14', hazardType: 'GAS' },
-  { nodeId: 'crusher_l5', name: 'Underground Crusher Station (Sub-level 5 -580m)', x: 160, y: 520, z: -580, level: 'l5', sensorId: 'SN-11', hazardType: 'GAS' },
-  { nodeId: 'junc_l1_e', name: 'L1 Ventilation East Drift (-120m)', x: 520, y: 150, z: -120, level: 'l1', sensorId: 'SN-04', hazardType: 'GAS' },
-  { nodeId: 'junc_l2_w', name: 'L2 Haulage Junction West (-240m)', x: 150, y: 230, z: -240, level: 'l2', sensorId: 'SN-05', hazardType: 'GAS' },
-  { nodeId: 'sump_l2', name: 'L2 Drainage Sump Basin (-260m)', x: 150, y: 280, z: -260, level: 'l2', sensorId: 'SN-06', hazardType: 'FLOOD' },
-  { nodeId: 'sump_l4', name: 'L4 Auxiliary Sump Basin (-500m)', x: 150, y: 460, z: -500, level: 'l4', sensorId: 'SN-09', hazardType: 'FLOOD' },
-  { nodeId: 'junc_l6_w', name: 'L6 Diamond Drilling Crosscut (-680m)', x: 150, y: 620, z: -680, level: 'l6', sensorId: 'SN-13', hazardType: 'GAS' },
-  { nodeId: 'junc_l3_w', name: 'L3 Survey Crosscut West (-380m)', x: 140, y: 330, z: -380, level: 'l3', sensorId: 'SN-07', hazardType: 'GAS' }
+  { nodeId: 'face_4b', name: 'Extraction Face 4B (Tunnel 3 -380m)', x: 590, y: 330, z: -380, level: 'l3', sensorId: 'SN-08', hazardType: 'GAS' },
+  { nodeId: 'face_5a', name: 'Seam 5A Extraction Heading (Tunnel 4 -480m)', x: 560, y: 420, z: -480, level: 'l4', sensorId: 'SN-10', hazardType: 'GAS' },
+  { nodeId: 'crusher_l5', name: 'Underground Crusher Station (Tunnel 5 -580m)', x: 160, y: 520, z: -580, level: 'l5', sensorId: 'SN-11', hazardType: 'GAS' },
+  { nodeId: 'junc_l5_e', name: 'South Exploration Gallery (Tunnel 5 -580m)', x: 570, y: 520, z: -580, level: 'l5', sensorId: 'SN-13', hazardType: 'GAS' },
+  { nodeId: 'junc_l1_e', name: 'Tunnel 1 Ventilation East Drift (-120m)', x: 520, y: 150, z: -120, level: 'l1', sensorId: 'SN-04', hazardType: 'GAS' },
+  { nodeId: 'junc_l2_w', name: 'Tunnel 2 Haulage Junction West (-240m)', x: 150, y: 230, z: -240, level: 'l2', sensorId: 'SN-05', hazardType: 'GAS' },
+  { nodeId: 'sump_l2', name: 'Tunnel 2 Drainage Sump Basin (-260m)', x: 150, y: 280, z: -260, level: 'l2', sensorId: 'SN-06', hazardType: 'FLOOD' },
+  { nodeId: 'sump_l4', name: 'Tunnel 4 Auxiliary Sump Basin (-500m)', x: 150, y: 460, z: -500, level: 'l4', sensorId: 'SN-09', hazardType: 'FLOOD' },
+  { nodeId: 'junc_l3_w', name: 'Tunnel 3 Survey Crosscut West (-380m)', x: 140, y: 330, z: -380, level: 'l3', sensorId: 'SN-07', hazardType: 'GAS' }
 ];
 
 export const INITIAL_STATE = {
@@ -126,10 +114,11 @@ export const INITIAL_STATE = {
   hazardCycleIdx: 0,
   floodCycleIdx: 0,
   selectedWorkerId: null,
+  routeMode: 'NORMAL', // 'NORMAL' | 'DANGER' | 'SOS_ACTIVE'
 
-  // 16 Indian Miners distributed across all 6 subterranean levels (2-3 per level)
+  // 16 Indian Miners distributed across exactly 5 subterranean tunnels
   workers: [
-    // Sub-level 1
+    // Tunnel 1
     {
       id: 'W-01',
       name: 'Rajesh Kumar',
@@ -173,7 +162,7 @@ export const INITIAL_STATE = {
       sosActive: false, tagWarning: null, tagRedirectRoute: null, tagUptime: '04h 22m'
     },
 
-    // Sub-level 2
+    // Tunnel 2
     {
       id: 'W-04',
       name: 'Amit Patel',
@@ -217,7 +206,7 @@ export const INITIAL_STATE = {
       sosActive: false, tagWarning: null, tagRedirectRoute: null, tagUptime: '04h 22m'
     },
 
-    // Sub-level 3
+    // Tunnel 3
     {
       id: 'W-07',
       name: 'Anil Yadav',
@@ -261,7 +250,7 @@ export const INITIAL_STATE = {
       sosActive: false, tagWarning: null, tagRedirectRoute: null, tagUptime: '04h 22m'
     },
 
-    // Sub-level 4 [NEW]
+    // Tunnel 4
     {
       id: 'W-10',
       name: 'Ravi Shankar',
@@ -305,7 +294,7 @@ export const INITIAL_STATE = {
       sosActive: false, tagWarning: null, tagRedirectRoute: null, tagUptime: '04h 22m'
     },
 
-    // Sub-level 5 [NEW]
+    // Tunnel 5
     {
       id: 'W-13',
       name: 'Sanjay Nair',
@@ -334,17 +323,15 @@ export const INITIAL_STATE = {
       battery: 91, rssi: -80, status: 'NORMAL',
       sosActive: false, tagWarning: null, tagRedirectRoute: null, tagUptime: '04h 22m'
     },
-
-    // Sub-level 6 [NEW]
     {
       id: 'W-15',
       name: 'Arjun Rathore',
-      role: 'Deep Seam Heading Miner',
-      level: 'l6',
-      nodeId: 'face_6b',
-      x: 540, y: 620, z: -680,
-      baseX: 380, baseY: 620, baseZ: -680,
-      patrolTargetX: 580, patrolTargetY: 620,
+      role: 'Deep Extraction Gallery Miner',
+      level: 'l5',
+      nodeId: 'junc_l5_e',
+      x: 540, y: 520, z: -580,
+      baseX: 440, baseY: 520, baseZ: -580,
+      patrolTargetX: 570, patrolTargetY: 520,
       patrolProgress: 0.7, patrolDir: -1,
       hr: 85, spO2: 96, temp: 37.2, motion: 'WALKING',
       battery: 86, rssi: -88, status: 'NORMAL',
@@ -354,11 +341,11 @@ export const INITIAL_STATE = {
       id: 'W-16',
       name: 'Kavita Sen',
       role: 'Diamond Core Drill Specialist',
-      level: 'l6',
-      nodeId: 'junc_l6_w',
-      x: 200, y: 620, z: -680,
-      baseX: 150, baseY: 620, baseZ: -680,
-      patrolTargetX: 300, patrolTargetY: 620,
+      level: 'l5',
+      nodeId: 'shaft_l5',
+      x: 340, y: 520, z: -580,
+      baseX: 320, baseY: 520, baseZ: -580,
+      patrolTargetX: 420, patrolTargetY: 520,
       patrolProgress: 0.3, patrolDir: 1,
       hr: 74, spO2: 98, temp: 36.6, motion: 'WALKING',
       battery: 94, rssi: -85, status: 'NORMAL',
@@ -366,7 +353,7 @@ export const INITIAL_STATE = {
     }
   ],
 
-  // 14 Sentinel Nodes across all subterranean levels
+  // 13 Sentinel Nodes across all 5 subterranean tunnels
   sensors: [
     {
       id: 'SN-01',
@@ -390,8 +377,8 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-03',
-      name: 'L1 Substation Sentinel',
-      location: 'Sub-level 1 West (-120m)',
+      name: 'Tunnel 1 Substation Sentinel',
+      location: 'Tunnel 1 West (-120m)',
       level: 'l1',
       x: 140, y: 150, z: -120,
       ch4: 0.08, co: 6, h2s: 0.3, o2: 20.7, temp: 24.5, humidity: 68, waterLevel: 2, vibration: 0.31,
@@ -400,8 +387,8 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-04',
-      name: 'L1 Ventilation Node',
-      location: 'Sub-level 1 East (-120m)',
+      name: 'Tunnel 1 Ventilation Node',
+      location: 'Tunnel 1 East (-120m)',
       level: 'l1',
       x: 520, y: 150, z: -120,
       ch4: 0.12, co: 8, h2s: 0.4, o2: 20.6, temp: 25.2, humidity: 71, waterLevel: 0, vibration: 0.28,
@@ -410,8 +397,8 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-05',
-      name: 'L2 Haulage Junction Node',
-      location: 'Sub-level 2 Station (-240m)',
+      name: 'Tunnel 2 Haulage Junction Node',
+      location: 'Tunnel 2 Station (-240m)',
       level: 'l2',
       x: 320, y: 230, z: -240,
       ch4: 0.18, co: 11, h2s: 0.6, o2: 20.5, temp: 26.8, humidity: 76, waterLevel: 5, vibration: 0.45,
@@ -420,7 +407,7 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-06',
-      name: 'L2 Drainage Sump Sentinel',
+      name: 'Tunnel 2 Drainage Sump Sentinel',
       location: 'Drainage Pump Station (-260m)',
       level: 'l2',
       x: 150, y: 280, z: -260,
@@ -430,7 +417,7 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-07',
-      name: 'L3 Refuge Station Sentinel',
+      name: 'Tunnel 3 Refuge Station Sentinel',
       location: 'Refuge Station (-380m)',
       level: 'l3',
       x: 440, y: 330, z: -380,
@@ -450,8 +437,8 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-09',
-      name: 'L4 Auxiliary Sump Sentinel',
-      location: 'Sub-level 4 Sump (-500m)',
+      name: 'Tunnel 4 Auxiliary Sump Sentinel',
+      location: 'Tunnel 4 Sump (-500m)',
       level: 'l4',
       x: 150, y: 460, z: -500,
       ch4: 0.24, co: 15, h2s: 0.8, o2: 20.4, temp: 28.6, humidity: 86, waterLevel: 10, vibration: 0.48,
@@ -470,7 +457,7 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-11',
-      name: 'L5 Underground Crusher Sentinel',
+      name: 'Tunnel 5 Underground Crusher Sentinel',
       location: 'Jaw Crusher Station (-580m)',
       level: 'l5',
       x: 160, y: 520, z: -580,
@@ -480,8 +467,8 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-12',
-      name: 'L5 South Deep Refuge Sentinel',
-      location: 'L5 Refuge Station (-580m)',
+      name: 'Tunnel 5 South Deep Refuge Sentinel',
+      location: 'Tunnel 5 Refuge Station (-580m)',
       level: 'l5',
       x: 440, y: 520, z: -580,
       ch4: 0.16, co: 10, h2s: 0.6, o2: 20.6, temp: 29.5, humidity: 75, waterLevel: 1, vibration: 0.40,
@@ -490,23 +477,13 @@ export const INITIAL_STATE = {
     },
     {
       id: 'SN-13',
-      name: 'L6 Deep Horizon Crosscut Sentinel',
-      location: 'L6 Crosscut Station (-680m)',
-      level: 'l6',
-      x: 150, y: 620, z: -680,
-      ch4: 0.29, co: 20, h2s: 1.0, o2: 20.2, temp: 32.2, humidity: 83, waterLevel: 3, vibration: 0.58,
-      battery: 89, status: 'NORMAL', meshHops: 7,
-      history: { ch4: [0.29], co: [20], water: [3], risk: [25] }
-    },
-    {
-      id: 'SN-14',
-      name: 'Lower Seam 6B Deep Heading Sentinel',
-      location: 'Seam 6B Heading (-680m)',
-      level: 'l6',
-      x: 580, y: 620, z: -680,
-      ch4: 0.32, co: 22, h2s: 1.3, o2: 20.1, temp: 33.4, humidity: 86, waterLevel: 5, vibration: 0.74,
-      battery: 86, status: 'NORMAL', meshHops: 7,
-      history: { ch4: [0.32], co: [22], water: [5], risk: [28] }
+      name: 'Tunnel 5 South Exploration Gallery Sentinel',
+      location: 'Tunnel 5 Heading (-580m)',
+      level: 'l5',
+      x: 570, y: 520, z: -580,
+      ch4: 0.22, co: 14, h2s: 0.7, o2: 20.5, temp: 30.8, humidity: 78, waterLevel: 1, vibration: 0.46,
+      battery: 91, status: 'NORMAL', meshHops: 6,
+      history: { ch4: [0.22], co: [14], water: [1], risk: [18] }
     }
   ],
 
@@ -519,7 +496,7 @@ export const INITIAL_STATE = {
       level: 'l2',
       x: 340, y: 230, z: -240,
       targetX: 340, targetY: 230, targetZ: -240,
-      status: 'PATROLLING', // PATROLLING, SPRINTING_TO_INCIDENT, CONDUCTING_SLAM_RECON, FAILED, OFFLINE
+      status: 'PATROLLING', // PATROLLING, SPRINTING_TO_INCIDENT, CONDUCTING_SLAM_RECON, ASSISTING_WORKER, FAILED, OFFLINE
       battery: 89,
       speedMps: 2.8,
       mappedCoverage: 78.4,
@@ -530,7 +507,9 @@ export const INITIAL_STATE = {
       payload: '360° RPLiDAR A3 + FLIR Thermal IR + Multi-Gas Sniffer + UWB Directional',
       missionGoal: 'Autonomous SLAM perimeter reconnaissance and instant hazard verification',
       isFailed: false,
-      failureReason: ''
+      failureReason: '',
+      waypointPath: [],
+      waypointIndex: 0
     },
     r02: {
       id: 'R-02',
@@ -540,14 +519,16 @@ export const INITIAL_STATE = {
       level: 'l1',
       x: 330, y: 150, z: -120,
       targetX: 330, targetY: 150, targetZ: -120,
-      status: 'STANDBY_HOT', // STANDBY_HOT, SPRINTING_TO_INCIDENT, CONDUCTING_SLAM_RECON, RETURNING
+      status: 'STANDBY_HOT', // STANDBY_HOT, SPRINTING_TO_INCIDENT, CONDUCTING_SLAM_RECON, ASSISTING_WORKER, RETURNING
       battery: 98,
       speedMps: 3.2,
       mappedCoverage: 100,
       payload: '360° RPLiDAR A3 + FLIR Thermal + 2x Emergency O2 Tanks + 10W LoRa Booster',
-      missionGoal: 'Hot standby at L1 shaft collar ready to assume full recon & pathfinding on failover',
+      missionGoal: 'Hot standby ready to assume full recon & rapid rescue response',
       isFailed: false,
-      activeTransfer: false
+      activeTransfer: false,
+      waypointPath: [],
+      waypointIndex: 0
     }
   },
 
@@ -591,6 +572,26 @@ export const INITIAL_STATE = {
     entryStatus: 'AUTHORIZED_WITH_SCBA'
   },
 
+  // Dedicated BLACK Route for SOS: Robot -> SOS Worker
+  sosBlackPath: {
+    active: false,
+    assignedRobotId: 'r01',
+    targetWorkerId: null,
+    pathNodes: [],
+    nodeWaypoints: [],
+    currentWaypointIdx: 0,
+    arrived: false
+  },
+
+  // Robot Arrival & Assisting Worker Alert state
+  workerReachedAlert: {
+    active: false,
+    workerId: null,
+    workerName: '',
+    robotId: 'R-01',
+    timestamp: ''
+  },
+
   hazards: {
     gasPlume: {
       active: false,
@@ -618,7 +619,7 @@ export const INITIAL_STATE = {
     seismicTremor: {
       active: false,
       magnitude: 0.65,
-      zone: 'Sub-level 3 Hanging Wall'
+      zone: 'Tunnel 3 Hanging Wall'
     }
   },
 
@@ -635,8 +636,7 @@ export const INITIAL_STATE = {
     { from: 'SN-09', to: 'SN-10', quality: 87, active: true },
     { from: 'SN-09', to: 'SN-11', quality: 85, active: true },
     { from: 'SN-11', to: 'SN-12', quality: 90, active: true },
-    { from: 'SN-12', to: 'SN-13', quality: 88, active: true },
-    { from: 'SN-13', to: 'SN-14', quality: 92, active: true }
+    { from: 'SN-12', to: 'SN-13', quality: 92, active: true }
   ],
 
   routes: {
@@ -651,7 +651,7 @@ export const INITIAL_STATE = {
       type: 'INFO',
       severity: 'normal',
       title: 'NEXUS Subterranean Engine Online',
-      message: '14 Sentinel Nodes locked in synchronized LoRa mesh across 6 Subterranean Levels. ESP32 Wearable telemetry active on 16 miners.'
+      message: '13 Sentinel Nodes locked in synchronized LoRa mesh across 5 Subterranean Tunnels. ESP32 Wearable telemetry active on 16 miners.'
     }
   ],
 
@@ -664,3 +664,45 @@ export let state = JSON.parse(JSON.stringify(INITIAL_STATE));
 export function resetState() {
   state = JSON.parse(JSON.stringify(INITIAL_STATE));
 }
+
+/**
+ * Global Route Visibility Enforcer
+ * State Priority:
+ * - DANGER: RED=true, GREEN=true, BLACK=false
+ * - SOS_ACTIVE: RED=false, GREEN=false, BLACK=true
+ * - NORMAL: all routes=false
+ * Never displays mixed route types.
+ */
+export function getRouteVisibilityState() {
+  const hasSOSWorker = state.workers.some(w => w.sosActive && w.status === 'SOS');
+  const isSOSMode = state.routeMode === 'SOS_ACTIVE' || state.activeScenario === 'SOS_ACTIVE' || hasSOSWorker;
+
+  if (isSOSMode) {
+    return {
+      mode: 'SOS_ACTIVE',
+      red: false,
+      green: false,
+      black: state.sosBlackPath && state.sosBlackPath.active && state.sosBlackPath.pathNodes.length > 0
+    };
+  }
+
+  const hasDangerWorker = state.workers.some(w => w.status === 'TRAPPED' || w.status === 'DANGER' || w.status === 'BEING_RESCUED');
+  const isDangerMode = state.routeMode === 'DANGER' || state.activeScenario === 'DANGER' || state.hazards.gasPlume.active || state.hazards.floodWater.active || hasDangerWorker;
+
+  if (isDangerMode) {
+    return {
+      mode: 'DANGER',
+      red: Boolean(state.rescueTeamRoute && state.rescueTeamRoute.active && state.rescueTeamRoute.pathNodes?.length > 0),
+      green: Boolean(state.rescueTeamRoute && state.rescueTeamRoute.active && state.rescueTeamRoute.workerEgressNodes?.length > 0),
+      black: false
+    };
+  }
+
+  return {
+    mode: 'NORMAL',
+    red: false,
+    green: false,
+    black: false
+  };
+}
+

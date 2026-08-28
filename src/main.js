@@ -174,26 +174,46 @@ class NexusApp {
     // 2D Tactical Map
     this.components.map2D = new MineMap2D('persistent2DMapContainer', (type, data) => this.openEntityInspector(type, data));
 
-    // 3D Digital Twin
-    this.components.digitalTwin = new DigitalTwin3D('persistent3DDigitalTwinContainer');
+    // 3D Digital Twin (Supports 3D Raycasting Worker Selection)
+    this.components.digitalTwin = new DigitalTwin3D('persistent3DDigitalTwinContainer', (type, data) => this.openEntityInspector(type, data));
+
+    // Close button for floating worker health panel
+    const fwhClose = document.getElementById('fwhCloseBtn');
+    if (fwhClose) {
+      fwhClose.onclick = () => {
+        state.selectedWorkerId = null;
+        const panel = document.getElementById('floatingWorkerHealthPanel');
+        if (panel) panel.style.display = 'none';
+      };
+    }
+
+    // Close button for robot arrival banner
+    const rabClose = document.getElementById('rabCloseBtn');
+    if (rabClose) {
+      rabClose.onclick = () => {
+        if (state.workerReachedAlert) state.workerReachedAlert.active = false;
+        const banner = document.getElementById('robotArrivalBanner');
+        if (banner) banner.style.display = 'none';
+      };
+    }
   }
 
   initDeckViews() {
     // 1. Overview Deck View
     this.renderOverviewDeck();
 
-    // 2. Workers Deck (16 Indian Miners)
+    // 2. Workers Deck (16 Indian Miners across 5 Tunnels)
     this.components.workers = new WorkerModule('deckWorkers', (workerId) => {
       this.components.map2D?.render();
     });
 
-    // 3. Sensors Deck (14 Distributed Nodes)
+    // 3. Sensors Deck (13 Distributed Sentinel Nodes)
     this.components.sensors = new SensorModule('deckSensors');
 
     // 4. Robots Deck (Dual Hexapod Spiders)
     this.components.robots = new RobotModule('deckRobots');
 
-    // 5. Routes Deck (RED Rescue & GREEN Evac)
+    // 5. Routes Deck (RED Rescue, GREEN Evac, BLACK SOS)
     this.components.routes = new RoutePlannerModule('deckRoutes', () => {
       this.components.map2D?.render();
     });
@@ -241,28 +261,29 @@ class NexusApp {
         </div>
       </div>
 
-      <!-- Personnel Quick Grid (16 Indian Miners) -->
+      <!-- Personnel Quick Grid (16 Indian Miners across 5 Tunnels) -->
       <div class="nexus-card">
         <div class="card-header">
           <div class="card-title-group">
             <i data-lucide="users" style="color: var(--green-safe);"></i>
-            <span class="card-title">PERSONNEL BIO-TAG STATUS (16 MINERS ACROSS 6 LEVELS)</span>
+            <span class="card-title">PERSONNEL BIO-TAG STATUS (16 MINERS ACROSS 5 TUNNELS)</span>
           </div>
           <span class="nav-badge" style="background: ${trappedMiners.length > 0 ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${trappedMiners.length > 0 ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">
-            ${trappedMiners.length > 0 ? `${trappedMiners.length} TRAPPED (STAND STILL)` : '16 NOMINAL'}
+            ${trappedMiners.length > 0 ? `${trappedMiners.length} ALERT(S)` : '16 NOMINAL'}
           </span>
         </div>
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-family: var(--font-mono); font-size: 9.5px;">
           ${state.workers.map(w => {
       const isTrapped = w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive;
+      const isAssisted = w.status === 'BEING_ASSISTED';
       return `
-              <div style="background: ${isTrapped ? 'var(--red-tint)' : 'var(--bg-secondary)'}; border: 1px solid ${isTrapped ? 'var(--red-crit)' : 'var(--border-subtle)'}; padding: 6px; border-radius: var(--radius-xs); display: flex; flex-direction: column; gap: 2px;">
+              <div style="background: ${isTrapped ? 'var(--red-tint)' : (isAssisted ? 'var(--blue-tint)' : 'var(--bg-secondary)')}; border: 1px solid ${isTrapped ? 'var(--red-crit)' : (isAssisted ? 'var(--blue-primary)' : 'var(--border-subtle)')}; padding: 6px; border-radius: var(--radius-xs); display: flex; flex-direction: column; gap: 2px; cursor: pointer;" onclick="document.querySelector('.worker-card[data-worker-id=${w.id}]')?.click()">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : 'var(--text-highlight)'}; font-size: 10px;">${w.id}</span>
-                  <span style="font-size: 8px; font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : 'var(--green-safe)'};">${isTrapped ? 'TRAPPED' : 'OK'}</span>
+                  <span style="font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : (isAssisted ? 'var(--blue-primary)' : 'var(--text-highlight)')}; font-size: 10px;">${w.id}</span>
+                  <span style="font-size: 8px; font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : (isAssisted ? 'var(--blue-primary)' : 'var(--green-safe)')};">${isTrapped ? 'SOS' : (isAssisted ? 'ASSIST' : 'OK')}</span>
                 </div>
                 <div style="font-size: 9px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.name}</div>
-                <div style="font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : 'var(--blue-primary)'}; font-size: 9.5px;">${w.hr} BPM (${w.level.toUpperCase()})</div>
+                <div style="font-weight: 800; color: ${isTrapped ? 'var(--red-crit)' : (isAssisted ? 'var(--blue-primary)' : 'var(--blue-primary)')}; font-size: 9.5px;">${w.hr} BPM (${w.level.toUpperCase()})</div>
               </div>
             `;
     }).join('')}
@@ -274,7 +295,7 @@ class NexusApp {
         <div class="card-header">
           <div class="card-title-group">
             <i data-lucide="bot" style="color: var(--purple-bright);"></i>
-            <span class="card-title">DUAL SPIDY ROBOTICS & SLAM RECONNAISSANCE</span>
+            <span class="card-title">DUAL SPIDY ROBOTICS & AUTONOMOUS DISPATCH</span>
           </div>
           <button class="btn-scenario btn-robot-action" id="btnDeckViewRobots" style="font-size: 10px; padding: 2px 8px;">Command Fleet</button>
         </div>
@@ -401,7 +422,7 @@ class NexusApp {
     const workerBadge = document.getElementById('tabWorkerBadge');
     if (workerBadge) {
       const trappedCount = s.workers.filter(w => w.status === 'TRAPPED' || w.status === 'SOS' || w.sosActive).length;
-      workerBadge.textContent = trappedCount > 0 ? `${trappedCount} TRAPPED!` : '16 OK';
+      workerBadge.textContent = trappedCount > 0 ? `${trappedCount} ALERT!` : '16 OK';
       workerBadge.style.background = trappedCount > 0 ? 'var(--red-tint)' : 'var(--blue-tint)';
       workerBadge.style.color = trappedCount > 0 ? 'var(--red-crit)' : 'var(--blue-primary)';
     }
@@ -409,16 +430,110 @@ class NexusApp {
     const alertBadge = document.getElementById('tabAlertBadge');
     if (alertBadge) alertBadge.textContent = s.alerts.length;
 
-    // 5. Always Render Persistent Map
+    // 5. Dynamic Floating Worker Health Panel
+    this.updateFloatingWorkerHealthPanel(s);
+
+    // 6. Dynamic Robot Arrival Banner
+    this.updateRobotArrivalBanner(s);
+
+    // 7. Always Render Persistent Map
     if (this.activeMapMode === '2d' && this.components.map2D) {
       this.components.map2D.render();
     }
 
-    // 6. Render active deck animations if open
+    // 8. Render active deck animations if open
     if (this.activeDeck === 'workers' && this.components.workers) {
       this.components.workers.drawECGWaveforms();
     } else if (this.activeDeck === 'robots' && this.components.robots) {
       this.components.robots.drawLidarScan();
+    }
+  }
+
+  updateFloatingWorkerHealthPanel(s) {
+    const panel = document.getElementById('floatingWorkerHealthPanel');
+    if (!panel) return;
+
+    if (!state.selectedWorkerId) {
+      panel.style.display = 'none';
+      return;
+    }
+
+    const w = s.workers.find(worker => worker.id === state.selectedWorkerId);
+    if (!w) {
+      panel.style.display = 'none';
+      return;
+    }
+
+    panel.style.display = 'block';
+
+    const isSOS = w.status === 'SOS' || w.sosActive;
+    const isAssisted = w.status === 'BEING_ASSISTED';
+    const isDanger = w.status === 'TRAPPED' || w.status === 'DANGER';
+
+    const dot = document.getElementById('fwhPulseDot');
+    if (dot) {
+      dot.className = `fwh-pulse-dot ${isSOS || isDanger ? 'danger' : (isAssisted ? 'assisted' : '')}`;
+    }
+
+    const nameEl = document.getElementById('fwhName');
+    if (nameEl) nameEl.textContent = w.name;
+
+    const idRoleEl = document.getElementById('fwhIdRole');
+    if (idRoleEl) idRoleEl.textContent = `${w.id} | ${w.role}`;
+
+    const locEl = document.getElementById('fwhLocation');
+    if (locEl) locEl.textContent = `${w.level.toUpperCase()} (${w.z}m)`;
+
+    const hrEl = document.getElementById('fwhHR');
+    if (hrEl) {
+      hrEl.textContent = `${w.hr} BPM`;
+      hrEl.style.color = w.hr > 120 ? 'var(--red-crit)' : (isAssisted ? 'var(--blue-primary)' : 'var(--green-safe)');
+    }
+
+    const tempEl = document.getElementById('fwhTemp');
+    if (tempEl) tempEl.textContent = `${w.temp || 36.6} °C`;
+
+    const spO2El = document.getElementById('fwhSpO2');
+    if (spO2El) {
+      spO2El.textContent = `${w.spO2} %`;
+      spO2El.style.color = w.spO2 < 93 ? 'var(--red-crit)' : 'var(--text-highlight)';
+    }
+
+    const motionEl = document.getElementById('fwhMotion');
+    if (motionEl) {
+      motionEl.textContent = isSOS || isDanger ? 'STAND STILL' : (w.motion || 'WALKING');
+      motionEl.style.color = isSOS || isDanger ? 'var(--red-crit)' : 'var(--text-highlight)';
+    }
+
+    const statusEl = document.getElementById('fwhStatus');
+    if (statusEl) {
+      statusEl.textContent = isSOS ? 'EMERGENCY SOS' : (isAssisted ? 'BEING ASSISTED' : (isDanger ? 'TRAPPED / DANGER' : 'NORMAL (SAFE)'));
+      statusEl.style.color = isSOS || isDanger ? 'var(--red-crit)' : (isAssisted ? 'var(--blue-primary)' : 'var(--green-safe)');
+    }
+
+    const alertEl = document.getElementById('fwhTagAlert');
+    if (alertEl) {
+      if (w.tagWarning) {
+        alertEl.style.display = 'block';
+        alertEl.textContent = w.tagWarning;
+      } else {
+        alertEl.style.display = 'none';
+      }
+    }
+  }
+
+  updateRobotArrivalBanner(s) {
+    const banner = document.getElementById('robotArrivalBanner');
+    if (!banner) return;
+
+    if (state.workerReachedAlert && state.workerReachedAlert.active) {
+      banner.style.display = 'flex';
+      const subText = document.getElementById('rabSubText');
+      if (subText) {
+        subText.textContent = `Autonomous Robot ${state.workerReachedAlert.robotName || 'R-01'} has reached ${state.workerReachedAlert.workerName} (${state.workerReachedAlert.workerId}). Automated triage & life support telemetry active.`;
+      }
+    } else {
+      banner.style.display = 'none';
     }
   }
 
@@ -473,6 +588,11 @@ class NexusApp {
   }
 
   openEntityInspector(type, data) {
+    if (type === 'worker') {
+      state.selectedWorkerId = data.id;
+      // In addition to floating panel, also opens modal if desired
+    }
+
     const modal = document.getElementById('inspectorModal');
     const title = document.getElementById('modalTitle');
     const body = document.getElementById('modalBody');
@@ -482,6 +602,7 @@ class NexusApp {
 
     if (type === 'worker') {
       const isTrapped = data.status === 'TRAPPED' || data.status === 'SOS' || data.sosActive;
+      const isAssisted = data.status === 'BEING_ASSISTED';
       const rescue = state.rescueTeamRoute || {
         origin: 'Surface Portal A (0m)',
         destination: `${data.name} (${data.level.toUpperCase()})`,
@@ -496,17 +617,17 @@ class NexusApp {
           <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
             <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
               <span style="font-size: 13px; font-weight: 800; color: var(--text-highlight);">${data.name} (${data.role})</span>
-              <span class="nav-badge" style="background: ${isTrapped ? 'var(--red-tint)' : 'var(--green-tint)'}; color: ${isTrapped ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">
-                ${isTrapped ? '🚨 TRAPPED (STAND STILL)' : data.status}
+              <span class="nav-badge" style="background: ${isTrapped ? 'var(--red-tint)' : (isAssisted ? 'var(--blue-tint)' : 'var(--green-tint)')}; color: ${isTrapped ? 'var(--red-crit)' : (isAssisted ? 'var(--blue-primary)' : 'var(--green-safe)')}; font-weight: 800;">
+                ${isTrapped ? '🚨 SOS ACTIVE' : (isAssisted ? '🤖 BEING ASSISTED' : data.status)}
               </span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 10px;">
               <div><strong>Depth:</strong> ${data.z}m (${data.level.toUpperCase()})</div>
               <div><strong>Heart Rate:</strong> <span style="color: ${data.hr > 120 ? 'var(--red-crit)' : 'var(--green-safe)'}; font-weight: 800;">${data.hr} BPM</span></div>
               <div><strong>SpO2:</strong> ${data.spO2}%</div>
+              <div><strong>Temp:</strong> ${data.temp || 36.6}°C</div>
               <div><strong>Motion:</strong> ${isTrapped ? 'STAND STILL' : data.motion}</div>
-              <div><strong>ESP32 LoRa RSSI:</strong> ${data.rssi} dBm</div>
-              <div><strong>Tag Battery:</strong> ${data.battery}%</div>
+              <div><strong>Safety Status:</strong> ${data.status}</div>
             </div>
           </div>
 
@@ -549,7 +670,7 @@ class NexusApp {
                 ${data.status}
               </span>
             </div>
-            <div style="font-size: 10.5px; color: var(--text-muted);">Location: ${data.location} | Subterranean Level: ${data.level.toUpperCase()} | LoRa Mesh Hops: ${data.meshHops}</div>
+            <div style="font-size: 10.5px; color: var(--text-muted);">Location: ${data.location} | Subterranean Tunnel: ${data.level.toUpperCase()} | LoRa Mesh Hops: ${data.meshHops}</div>
           </div>
 
           <div style="background: #ffffff; border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs);">
@@ -602,7 +723,7 @@ class NexusApp {
       <div style="font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; display: flex; flex-direction: column; gap: 10px;">
         <div style="background: var(--blue-tint); border-left: 3.5px solid var(--blue-primary); padding: 8px 12px; border-radius: 0 var(--radius-xs) var(--radius-xs) 0;">
           <strong>INCIDENT IDENTIFIER:</strong> NEXUS-SUBTERRANEAN-RESCUE-BHARAT-IV<br>
-          <strong>LOCATION:</strong> Bharat Block-IV 6-Level Complex (-680m Depth)<br>
+          <strong>LOCATION:</strong> Bharat Block-IV 5-Tunnel Complex (-580m Depth)<br>
           <strong>MISSION OUTCOME:</strong> <span style="color: var(--green-safe); font-weight: 800;">100% SUCCESSFUL PERSONNEL EXTRICTION</span>
         </div>
 
@@ -639,3 +760,4 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = new NexusApp();
   app.init();
 });
+
